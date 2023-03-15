@@ -8,9 +8,8 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <math.h>
 
-#define NUM_FILTERS 16
-#define ORDER 8
 //==============================================================================
 Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -26,18 +25,25 @@ Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
 , parameters(*this, nullptr, juce::Identifier("sjf_spectralProcessor"), createParameterLayout() )
 {
     
-    bandGainParameter.resize( NUM_FILTERS );
-    m_lfos.resize( NUM_FILTERS );
-    for ( int c = 0; c < m_filters.size(); c++ )
-    {
-        m_filters[ c ].resize( NUM_FILTERS );
-    }
+//    bandGainParameter.resize( NUM_FILTERS );
+//    lfoRateParameter.resize( NUM_FILTERS );
+//    lfoDepthParameter.resize( NUM_FILTERS );
+//    lfoOffsetParameter.resize( NUM_FILTERS );
+//
+//    m_lfos.resize( NUM_FILTERS );
+//    for ( int c = 0; c < m_filters.size(); c++ )
+//    {
+//        m_filters[ c ].resize( NUM_FILTERS );
+//    }
     
     initialiseFilters( getSampleRate() );
     
     for ( int f = 0; f < NUM_FILTERS; f++ )
     {
         bandGainParameter[ f ] = parameters.state.getPropertyAsValue("bandGain" + juce::String( f ), nullptr, true);
+        lfoRateParameter[ f ] = parameters.state.getPropertyAsValue("lfoRate" + juce::String( f ), nullptr, true);
+        lfoDepthParameter[ f ] = parameters.state.getPropertyAsValue("lfoDepth" + juce::String( f ), nullptr, true);
+        lfoOffsetParameter[ f ] = parameters.state.getPropertyAsValue("lfoOffset" + juce::String( f ), nullptr, true);
     }
 }
 
@@ -163,10 +169,24 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    std::array< double, NUM_FILTERS > filteredAudio;
+    
+    for ( int f = 0; f < NUM_FILTERS; f++ )
+    {
+        m_lfos[ f ].setRateChange( 0.001 * std::pow( 20000.0f, lfoRateParameter[ f ].getValue() ) ); 
+        m_lfos[ f ].setOffset( sjf_scale<float>(0, 1, -0.5, 0.5, lfoOffsetParameter[ f ].getValue() ) );
+        m_lfos[ f ].setLFOtype( sjf_lfo::lfoType::sine );
+    }
+    
+    
+    
+    std::array< double, NUM_FILTERS > filteredAudio, lfoOutputs;
     double samp;
     for ( int indexThroughBuffer = 0; indexThroughBuffer < bufferSize; indexThroughBuffer++ )
     {
+        for ( int f = 0; f < NUM_FILTERS; f++ )
+        {
+            lfoOutputs[ f ] = m_lfos[ f ].output() * (float)lfoDepthParameter[ f ].getValue();
+        }
         // do lfo and weirdness here
         for ( int channel = 0; channel < totalNumOutputChannels; channel++ )
         {
@@ -174,6 +194,7 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
             for ( int f = 0; f < NUM_FILTERS; f++ )
             {
                 filteredAudio[ f ] = m_filters[ channel ][ f ].filterInput( samp );
+                filteredAudio[ f ] *= lfoOutputs[ f ] + (float)bandGainParameter[ f ].getValue();
             }
             samp = 0;
             for ( int f = 0; f < NUM_FILTERS; f++ )
@@ -218,7 +239,7 @@ void Sjf_spectralProcessorAudioProcessor::setStateInformation (const void* data,
 
 void Sjf_spectralProcessorAudioProcessor::initialiseFilters( double sampleRate)
 {
-//    m_biquadCalculator.initialise( sampleRate );
+    //    m_biquadCalculator.initialise( sampleRate );
     
     static constexpr std::array< double, NUM_FILTERS > frequencies
     { 100, 150, 250, 350, 500, 630, 800, 1000, 1300, 1600, 2000, 2600, 3500, 5000, 8000, 10000 };
@@ -239,9 +260,62 @@ void Sjf_spectralProcessorAudioProcessor::initialiseFilters( double sampleRate)
 }
 //==============================================================================
 
+void Sjf_spectralProcessorAudioProcessor::initialiseLFOs( double sampleRate)
+{
+    //    m_biquadCalculator.initialise( sampleRate );
+    
+    for ( int f = 0; f < NUM_FILTERS; f++ )
+    {
+        m_lfos[ f ].setSampleRate( sampleRate );
+    }
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setBandGain( const int bandNumber, const double gain )
+{
+    bandGainParameter[ bandNumber ].setValue( gain );
+}
+//==============================================================================
+const double Sjf_spectralProcessorAudioProcessor::getBandGain( const int bandNumber )
+{
+    return bandGainParameter[ bandNumber ].getValue();
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setLFORate( const int bandNumber, const double lfoR )
+{
+    lfoRateParameter[ bandNumber ].setValue( lfoR );
+}
+//==============================================================================
+const double Sjf_spectralProcessorAudioProcessor::getLFORate( const int bandNumber )
+{
+    return lfoRateParameter[ bandNumber ].getValue();
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setLFODepth( const int bandNumber, const double lfoD )
+{
+    lfoDepthParameter[ bandNumber ].setValue( lfoD );
+}
+//==============================================================================
+const double Sjf_spectralProcessorAudioProcessor::getLFODepth( const int bandNumber )
+{
+    return lfoDepthParameter[ bandNumber ].getValue();
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setLFOOffset( const int bandNumber, const double lfoOffset )
+{
+    lfoOffsetParameter[ bandNumber ].setValue( lfoOffset );
+}
+//==============================================================================
+const double Sjf_spectralProcessorAudioProcessor::getLFOOffset( const int bandNumber )
+{
+    return lfoOffsetParameter[ bandNumber ].getValue();
+}
+//==============================================================================
+
 juce::AudioProcessorValueTreeState::ParameterLayout Sjf_spectralProcessorAudioProcessor::createParameterLayout()
 {
+    juce::AudioProcessorValueTreeState::ParameterLayout params;
     
+    return params;
 }
 //==============================================================================
 // This creates new instances of the plugin..
