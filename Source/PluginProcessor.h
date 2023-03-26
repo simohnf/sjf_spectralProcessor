@@ -13,7 +13,7 @@
 #include "../../sjf_audio/sjf_biquadCascade.h"
 #include "../../sjf_audio/sjf_lfo.h"
 
-#define NUM_FILTERS 16
+//#define NUM_BANDS 16
 #define ORDER 8
 //==============================================================================
 /**
@@ -61,6 +61,8 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    
+    int getNumBands() { return NUM_BANDS; }
     void setBandGain( const int bandNumber, const double gain );
     const double getBandGain( const int bandNumber );
     
@@ -80,10 +82,12 @@ private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
     
-    std::array< std::array < sjf_biquadCascade< double >, NUM_FILTERS >, 2 > m_filters;
-    std::array< sjf_lfo, NUM_FILTERS > m_lfos;
+    static const int NUM_BANDS  = 16;
     
-    std::array< juce::Value, NUM_FILTERS > bandGainParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter;
+    std::array< std::array < sjf_biquadCascade< double >, NUM_BANDS >, 2 > m_filters;
+    std::array< sjf_lfo, NUM_BANDS > m_lfos;
+    
+    std::array< juce::Value, NUM_BANDS > bandGainParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter;
     
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sjf_spectralProcessorAudioProcessor)

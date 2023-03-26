@@ -25,20 +25,20 @@ Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
 , parameters(*this, nullptr, juce::Identifier("sjf_spectralProcessor"), createParameterLayout() )
 {
     
-//    bandGainParameter.resize( NUM_FILTERS );
-//    lfoRateParameter.resize( NUM_FILTERS );
-//    lfoDepthParameter.resize( NUM_FILTERS );
-//    lfoOffsetParameter.resize( NUM_FILTERS );
+//    bandGainParameter.resize( NUM_BANDS );
+//    lfoRateParameter.resize( NUM_BANDS );
+//    lfoDepthParameter.resize( NUM_BANDS );
+//    lfoOffsetParameter.resize( NUM_BANDS );
 //
-//    m_lfos.resize( NUM_FILTERS );
+//    m_lfos.resize( NUM_BANDS );
 //    for ( int c = 0; c < m_filters.size(); c++ )
 //    {
-//        m_filters[ c ].resize( NUM_FILTERS );
+//        m_filters[ c ].resize( NUM_BANDS );
 //    }
     
     initialiseFilters( getSampleRate() );
     
-    for ( int f = 0; f < NUM_FILTERS; f++ )
+    for ( int f = 0; f < NUM_BANDS; f++ )
     {
         bandGainParameter[ f ] = parameters.state.getPropertyAsValue("bandGain" + juce::String( f ), nullptr, true);
         lfoRateParameter[ f ] = parameters.state.getPropertyAsValue("lfoRate" + juce::String( f ), nullptr, true);
@@ -170,20 +170,23 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
         buffer.clear (i, 0, buffer.getNumSamples());
 
     
-    for ( int f = 0; f < NUM_FILTERS; f++ )
+    for ( int f = 0; f < NUM_BANDS; f++ )
     {
-        m_lfos[ f ].setRateChange( 0.001 * std::pow( 20000.0f, lfoRateParameter[ f ].getValue() ) ); 
+        auto r = (0.01f * std::pow( 2000.0f, (float)lfoRateParameter[ f ].getValue() ));
+//        auto param =  (float)lfoRateParameter[ f ].getValue();
+//        DBG("rate " << r << " param " << param );
+        m_lfos[ f ].setRateChange( 1.0f/r );
         m_lfos[ f ].setOffset( sjf_scale<float>(0, 1, -0.5, 0.5, lfoOffsetParameter[ f ].getValue() ) );
         m_lfos[ f ].setLFOtype( sjf_lfo::lfoType::sine );
     }
     
     
     
-    std::array< double, NUM_FILTERS > filteredAudio, lfoOutputs;
+    std::array< double, NUM_BANDS > filteredAudio, lfoOutputs;
     double samp;
     for ( int indexThroughBuffer = 0; indexThroughBuffer < bufferSize; indexThroughBuffer++ )
     {
-        for ( int f = 0; f < NUM_FILTERS; f++ )
+        for ( int f = 0; f < NUM_BANDS; f++ )
         {
             lfoOutputs[ f ] = m_lfos[ f ].output() * (float)lfoDepthParameter[ f ].getValue();
         }
@@ -191,13 +194,13 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
         for ( int channel = 0; channel < totalNumOutputChannels; channel++ )
         {
             samp = buffer.getSample( fastMod( channel, totalNumInputChannels ), indexThroughBuffer );
-            for ( int f = 0; f < NUM_FILTERS; f++ )
+            for ( int f = 0; f < NUM_BANDS; f++ )
             {
                 filteredAudio[ f ] = m_filters[ channel ][ f ].filterInput( samp );
                 filteredAudio[ f ] *= lfoOutputs[ f ] + (float)bandGainParameter[ f ].getValue();
             }
             samp = 0;
-            for ( int f = 0; f < NUM_FILTERS; f++ )
+            for ( int f = 0; f < NUM_BANDS; f++ )
             {
                 samp += filteredAudio[ f ];
             }
@@ -223,7 +226,7 @@ void Sjf_spectralProcessorAudioProcessor::getStateInformation (juce::MemoryBlock
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
-//    for ( int f = 0; f < NUM_FILTERS; f++ )
+//    for ( int f = 0; f < NUM_BANDS; f++ )
 //    {
 //        bandGainParameter[ f ].setValue( sampleMangler2.getSampleChoiceProbability( v ) );
 //    }
@@ -241,19 +244,19 @@ void Sjf_spectralProcessorAudioProcessor::initialiseFilters( double sampleRate)
 {
     //    m_biquadCalculator.initialise( sampleRate );
     
-    static constexpr std::array< double, NUM_FILTERS > frequencies
-    { 100, 150, 250, 350, 500, 630, 800, 1000, 1300, 1600, 2000, 2600, 3500, 5000, 8000, 10000 };
-    
+    static constexpr std::array< double, NUM_BANDS > frequencies
+    { 100 , 150, 250, 350, 500, 630, 800, 1000, 1300, 1600, 2000, 2600, 3500, 5000, 8000, 10000 };
+//    { 1000 };
     
     for ( int c = 0; c < m_filters.size(); c++ )
     {
-        for ( int f = 0; f < NUM_FILTERS; f++ )
+        for ( int f = 0; f < NUM_BANDS; f++ )
         {
             m_filters[ c ][ f ].initialise( sampleRate );
             m_filters[ c ][ f ].setNumOrders( ORDER );
             m_filters[ c ][ f ].setFrequency( frequencies[ f ] );
             if ( f == 0 ){ m_filters[ c ][ f ].setFilterType( sjf_biquadCalculator<double>::filterType::lowpass ); }
-            else if ( f == NUM_FILTERS-1 ){ m_filters[ c ][ f ].setFilterType( sjf_biquadCalculator<double>::filterType::highpass ); }
+            else if ( f == NUM_BANDS-1 ){ m_filters[ c ][ f ].setFilterType( sjf_biquadCalculator<double>::filterType::highpass ); }
             else { m_filters[ c ][ f ].setFilterType( sjf_biquadCalculator<double>::filterType::bandpass ); }
         }
     }
@@ -264,7 +267,7 @@ void Sjf_spectralProcessorAudioProcessor::initialiseLFOs( double sampleRate)
 {
     //    m_biquadCalculator.initialise( sampleRate );
     
-    for ( int f = 0; f < NUM_FILTERS; f++ )
+    for ( int f = 0; f < NUM_BANDS; f++ )
     {
         m_lfos[ f ].setSampleRate( sampleRate );
     }

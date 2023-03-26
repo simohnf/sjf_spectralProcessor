@@ -9,7 +9,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-#define NUM_BANDS 16
+//#define NUM_BANDS 16
 #define SLIDER_WIDTH 400
 #define SLIDER_HEIGHT 120
 #define SLIDER_HEIGHT2 SLIDER_HEIGHT/2
@@ -22,6 +22,7 @@
 Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEditor (Sjf_spectralProcessorAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
+    const int NUM_BANDS = audioProcessor.getNumBands();
     setLookAndFeel( &otherLookAndFeel );
     
     addAndMakeVisible( &bandGainsMultiSlider);
@@ -79,7 +80,7 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
 void Sjf_spectralProcessorAudioProcessorEditor::timerCallback()
 {
 //    sjf_setTooltipLabel( this, MAIN_TOOLTIP, tooltipLabel );
-    
+    const int NUM_BANDS = audioProcessor.getNumBands();
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         audioProcessor.setBandGain( b, bandGainsMultiSlider.fetch( b ) );
