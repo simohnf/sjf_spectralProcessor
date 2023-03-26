@@ -12,9 +12,12 @@
 #include "../../sjf_audio/sjf_audioUtilities.h"
 #include "../../sjf_audio/sjf_biquadCascade.h"
 #include "../../sjf_audio/sjf_lfo.h"
+#include "../../sjf_audio/sjf_delayLine.h"
+#include "../../sjf_audio/sjf_lpf.h"
+#include "../../sjf_audio/sjf_audioUtilities.h"
 
 //#define NUM_BANDS 16
-#define ORDER 8
+#define ORDER 4
 //==============================================================================
 /**
 */
@@ -74,9 +77,19 @@ public:
     
     void setLFOOffset( const int bandNumber, const double lfoOffset );
     const double getLFOOffset( const int bandNumber );
+    
+    void setDelayTime( const int bandNumber, const double delay );
+    const double getDelayTime( const int bandNumber );
+    
+    void setFeedback( const int bandNumber, const double fb );
+    const double getFeedback( const int bandNumber );
+    
 private:
     void initialiseFilters( double sampleRate );
+    void initialiseDelayLines( double sampleRate );
     void initialiseLFOs( double sampleRate );
+    void initialiseSmoothers( double sampleRate );
+    
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 private:
     //==============================================================================
@@ -84,11 +97,15 @@ private:
     
     static const int NUM_BANDS  = 16;
     
-    std::array< std::array < sjf_biquadCascade< double >, NUM_BANDS >, 2 > m_filters;
+    std::array< std::array < sjf_biquadCascade< float >, NUM_BANDS >, 2 > m_filters;
     std::array< sjf_lfo, NUM_BANDS > m_lfos;
+    std::array< std::array< sjf_delayLine< float >, NUM_BANDS >, 2 > m_delayLines;
     
-    std::array< juce::Value, NUM_BANDS > bandGainParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter;
+    std::vector< juce::Value > bandGainParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter;
+    std::array< sjf_lpf< float >, NUM_BANDS > m_gainSmoother, m_delaySmoother, m_fbSmoother, m_lfoSmoother;
     
+    std::atomic<float>* lfoTypeParameter = nullptr;
+    std::atomic<float>* bandsParameter = nullptr;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sjf_spectralProcessorAudioProcessor)
 };
