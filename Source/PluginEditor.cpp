@@ -18,7 +18,7 @@
 #define boxWidth 80
 
 #define WIDTH SLIDER_WIDTH + boxWidth + indent*3
-#define HEIGHT SLIDER_HEIGHT + 5*SLIDER_HEIGHT2 + indent*3 + textHeight
+#define HEIGHT SLIDER_HEIGHT + 5*SLIDER_HEIGHT2 + indent*3 + textHeight*2
 //==============================================================================
 Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEditor (Sjf_spectralProcessorAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor (&p), audioProcessor (p), valueTreeState( vts )
@@ -30,6 +30,14 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     bandGainsMultiSlider.setNumSliders( NUM_BANDS );
     bandGainsMultiSlider.setTooltip( "This sets the gain for each band" );
     bandGainsMultiSlider.sendLookAndFeelChange();
+    
+    addAndMakeVisible( &polarityFlips );
+    polarityFlips.setNumRows( 1 );
+    polarityFlips.setNumColumns( NUM_BANDS );
+    polarityFlips.setTooltip( "This allows you to flip the polarity of individual bands" );
+    polarityFlips.setLookAndFeel( &otherLookAndFeel );
+    polarityFlips.sendLookAndFeelChange();
+    
     
     addAndMakeVisible( &lfoDepthMultiSlider);
     lfoDepthMultiSlider.setNumSliders( NUM_BANDS );
@@ -59,6 +67,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     for (int b = 0; b < NUM_BANDS; b++)
     {
         bandGainsMultiSlider.setSliderValue(b, audioProcessor.getBandGain(b) );
+        polarityFlips.setToggleState( 0, b, audioProcessor.getBandPolarity( b ) );
         lfoDepthMultiSlider.setSliderValue(b, audioProcessor.getLFODepth(b) );
         lfoRateMultiSlider.setSliderValue(b, audioProcessor.getLFORate(b) );
         lfoOffsetMultiSlider.setSliderValue(b, audioProcessor.getLFOOffset(b) );
@@ -83,6 +92,20 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     bandsChoiceBox.setTooltip("This allows you to choose whether the odd bands (1, 3, 5, etc), the even bands, or both odd and even bands are sent to the output");
     bandsChoiceBox.sendLookAndFeelChange();
     
+    
+    addAndMakeVisible( &filterDesignBox );
+    filterDesignBox.addItem( "butterworth", 1 );
+    filterDesignBox.addItem( "bessel", 2 );
+    filterDesignBox.addItem( "chebyshev", 3 );
+    filterDesignBoxAttachment.reset( new juce::AudioProcessorValueTreeState::ComboBoxAttachment ( valueTreeState, "filterDesign", filterDesignBox ) );
+    filterDesignBox.setTooltip( "This allows you to change between different filter designs" );
+    filterDesignBox.sendLookAndFeelChange();
+    
+    addAndMakeVisible( &filterOrderNumBox );
+    filterOrderNumBoxAttachment.reset( new juce::AudioProcessorValueTreeState::SliderAttachment ( valueTreeState, "filterOrder", filterOrderNumBox ) );
+    filterOrderNumBox.setTooltip("This sets the order for all filters (higher order, steeper roll-off" );
+    filterOrderNumBox.sendLookAndFeelChange();
+    
     addAndMakeVisible( &randomAllButton );
     randomAllButton.setButtonText("random");
     randomAllButton.setTooltip( "This will randomise all of the sliders" );
@@ -91,6 +114,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         for (int b = 0; b < NUM_BANDS; b++)
         {
             bandGainsMultiSlider.setSliderValue(b, rand01() );
+            bool state = rand01() < 0.5 ? true : false;
+            polarityFlips.setToggleState(0, b, state );
             lfoDepthMultiSlider.setSliderValue(b, rand01() );
             lfoRateMultiSlider.setSliderValue(b, rand01() );
             lfoOffsetMultiSlider.setSliderValue(b, rand01() );
@@ -152,6 +177,12 @@ void Sjf_spectralProcessorAudioProcessorEditor::paint (juce::Graphics& g)
     g.setFont (15.0f);
     g.drawFittedText("sjf_spectralProcessor", 0, 0, getWidth(), textHeight, juce::Justification::centred, textHeight );
     g.drawFittedText("gain", bandGainsMultiSlider.getX(), bandGainsMultiSlider.getY(), bandGainsMultiSlider.getWidth(), bandGainsMultiSlider.getHeight(), juce::Justification::centred, textHeight );
+    const int NUM_BANDS = audioProcessor.getNumBands();
+    const float togW = SLIDER_WIDTH / NUM_BANDS;
+    for ( int b = 0; b < NUM_BANDS; b ++ )
+    {
+        g.drawFittedText(juce::CharPointer_UTF8 ("\xc3\x98"), polarityFlips.getX() + togW * b, polarityFlips.getY(), togW, polarityFlips.getHeight(), juce::Justification::centred, textHeight );
+    }
     g.drawFittedText("lfo depth", lfoDepthMultiSlider.getX(), lfoDepthMultiSlider.getY(), lfoDepthMultiSlider.getWidth(), lfoDepthMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     g.drawFittedText("lfo rate", lfoRateMultiSlider.getX(), lfoRateMultiSlider.getY(), lfoRateMultiSlider.getWidth(), lfoRateMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     g.drawFittedText("lfo offset", lfoOffsetMultiSlider.getX(), lfoOffsetMultiSlider.getY(), lfoOffsetMultiSlider.getWidth(), lfoOffsetMultiSlider.getHeight(), juce::Justification::centred, textHeight );
@@ -164,7 +195,9 @@ void Sjf_spectralProcessorAudioProcessorEditor::paint (juce::Graphics& g)
 void Sjf_spectralProcessorAudioProcessorEditor::resized()
 {
     bandGainsMultiSlider.setBounds( indent, textHeight, SLIDER_WIDTH, SLIDER_HEIGHT);
-    lfoDepthMultiSlider.setBounds( bandGainsMultiSlider.getX(), bandGainsMultiSlider.getBottom()+indent, SLIDER_WIDTH, SLIDER_HEIGHT2 );
+    polarityFlips.setBounds( bandGainsMultiSlider.getX(), bandGainsMultiSlider.getBottom(), SLIDER_WIDTH, textHeight );
+    
+    lfoDepthMultiSlider.setBounds( polarityFlips.getX(), polarityFlips.getBottom()+indent, SLIDER_WIDTH, SLIDER_HEIGHT2 );
     lfoRateMultiSlider.setBounds( lfoDepthMultiSlider.getX(), lfoDepthMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     lfoOffsetMultiSlider.setBounds( lfoRateMultiSlider.getX(), lfoRateMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     
@@ -173,11 +206,13 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     
     lfoTypeBox.setBounds( lfoDepthMultiSlider.getRight()+indent, lfoDepthMultiSlider.getY(), boxWidth, textHeight );
     bandsChoiceBox.setBounds( lfoTypeBox.getX(), lfoTypeBox.getBottom(), boxWidth, textHeight );
-    randomAllButton.setBounds( bandsChoiceBox.getX(), bandsChoiceBox.getBottom(), boxWidth, boxWidth );
+    filterDesignBox.setBounds( bandsChoiceBox.getX(), bandsChoiceBox.getBottom(), boxWidth, textHeight );
+    filterOrderNumBox.setBounds( filterDesignBox.getX(), filterDesignBox.getBottom(), boxWidth, textHeight );
+    randomAllButton.setBounds( filterOrderNumBox.getX(), filterOrderNumBox.getBottom(), boxWidth, boxWidth );
     
     tooltipsToggle.setBounds( randomAllButton.getX(), HEIGHT - textHeight - indent, boxWidth, textHeight );
     
-    tooltipLabel.setBounds( 0, HEIGHT, getWidth(), textHeight*3);
+    tooltipLabel.setBounds( 0, HEIGHT, getWidth(), textHeight*4 );
 }
 
 
@@ -189,6 +224,7 @@ void Sjf_spectralProcessorAudioProcessorEditor::timerCallback()
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         audioProcessor.setBandGain( b, bandGainsMultiSlider.fetch( b ) );
+        audioProcessor.setBandPolarity( b, polarityFlips.fetch( 1, b ) );
         audioProcessor.setLFORate( b, lfoRateMultiSlider.fetch( b ) );
         audioProcessor.setLFODepth( b, lfoDepthMultiSlider.fetch( b ) );
         audioProcessor.setLFOOffset( b, lfoOffsetMultiSlider.fetch( b ) );

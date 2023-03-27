@@ -25,27 +25,31 @@ Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
 #endif
 , parameters(*this, nullptr, juce::Identifier("sjf_spectralProcessor"), createParameterLayout() )
 {
+    lfoTypeParameter = parameters.getRawParameterValue("lfoType");
+    bandsParameter = parameters.getRawParameterValue("bands");
+    filterDesignParameter = parameters.getRawParameterValue("filterDesign");
+    filterOrderParameter = parameters.getRawParameterValue("filterOrder");
     
     initialiseFilters( getSampleRate() );
     initialiseDelayLines( getSampleRate() );
     initialiseLFOs( getSampleRate() );
     initialiseSmoothers( getSampleRate() );
     
-    lfoTypeParameter = parameters.getRawParameterValue("lfoType");
-    bandsParameter = parameters.getRawParameterValue("bands");
+
     
-    bandGainParameter.resize(NUM_BANDS);
-    lfoRateParameter.resize(NUM_BANDS);
-    lfoDepthParameter.resize(NUM_BANDS);
-    lfoOffsetParameter.resize(NUM_BANDS);
-    delayTimeParameter.resize(NUM_BANDS);
-    feedbackParameter.resize(NUM_BANDS);
+//    bandGainParameter.resize(NUM_BANDS);
+//    lfoRateParameter.resize(NUM_BANDS);
+//    lfoDepthParameter.resize(NUM_BANDS);
+//    lfoOffsetParameter.resize(NUM_BANDS);
+//    delayTimeParameter.resize(NUM_BANDS);
+//    feedbackParameter.resize(NUM_BANDS);
     
 
     
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         bandGainParameter[ b ] = parameters.state.getPropertyAsValue("bandGain" + juce::String( b ), nullptr, true);
+        polarityParameter[ b ] = parameters.state.getPropertyAsValue("polarity" + juce::String( b ), nullptr, true);
         lfoRateParameter[ b ] = parameters.state.getPropertyAsValue("lfoRate" + juce::String( b ), nullptr, true);
         lfoDepthParameter[ b ] = parameters.state.getPropertyAsValue("lfoDepth" + juce::String( b ), nullptr, true);
         lfoOffsetParameter[ b ] = parameters.state.getPropertyAsValue("lfoOffset" + juce::String( b ), nullptr, true);
@@ -57,6 +61,7 @@ Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         bandGainParameter[ b ].setValue( rand01() );
+        polarityParameter[ b ].setValue( std::round( rand01() ) );
         lfoRateParameter[ b ].setValue( rand01() );
         lfoDepthParameter[ b ].setValue( rand01() );
         lfoOffsetParameter[ b ].setValue( rand01() );
@@ -140,6 +145,12 @@ void Sjf_spectralProcessorAudioProcessor::prepareToPlay (double sampleRate, int 
     initialiseDelayLines( sampleRate );
     initialiseLFOs( sampleRate );
     initialiseSmoothers( sampleRate );
+    
+    float dcCutoff = calculateLPFCoefficient< float > ( 5, sampleRate );
+    for ( int c = 0; c < dcFilter.size(); c++ )
+    {
+        dcFilter[ c ].setCutoff( dcCutoff );
+    }
 }
 
 void Sjf_spectralProcessorAudioProcessor::releaseResources()
@@ -190,8 +201,8 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    std::array< double, NUM_BANDS > lfoDepths, bandGainTargets, feedbackTarget, delayTimeTarget;
-    
+    std::array< float, NUM_BANDS > lfoDepths, bandGainTargets, feedbackTarget, delayTimeTarget;
+    std::array< bool, NUM_BANDS > polarityFlip;
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         auto r = (0.01f * std::pow( 2000.0f, (float)lfoRateParameter[ b ].getValue() ));
@@ -211,12 +222,15 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
             delayTimeTarget[ b ] = 1.0f + 0.1f * (float)delayTimeParameter[ b ].getValue() * getSampleRate();
         }
         feedbackTarget[ b ] = (float)feedbackParameter[ b ].getValue() * 0.999f;
+        
+        polarityFlip[ b ] = (bool)polarityParameter[ b ].getValue();
     }
+    setFilterDesign( *filterDesignParameter );
+    setFilterOrder( *filterOrderParameter );
+//    polarityParameter
+    std::array< float, NUM_BANDS > filteredAudio, lfoOutputs, delayed, feedback, bandGains;
     
-    
-    
-    std::array< double, NUM_BANDS > filteredAudio, lfoOutputs, delayed, feedback, bandGains;
-    double sampIn, sampOut, gain;
+    float sampIn, sampOut, gain;
     
     int whichBands = *bandsParameter;
     int bandStart = (whichBands == 3) ? 1 : 0;
@@ -231,7 +245,8 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
                 m_delayLines[ channel ][ b ].setDelayTimeSamps( m_delaySmoother[ b ].filterInput( delayTimeTarget[ b ] ) );
             }
             feedback[ b ] = m_fbSmoother[ b ].filterInput( feedbackTarget[ b ] );
-            bandGains[ b ] = m_gainSmoother[ b ].filterInput( bandGainTargets[ b ] );
+            gain = polarityFlip[ b ] ? bandGainTargets[ b ] * -1.0f : bandGainTargets[ b ];
+            bandGains[ b ] = m_gainSmoother[ b ].filterInput( gain );
         }
         // do lfo and weirdness here
         for ( int channel = 0; channel < totalNumOutputChannels; channel++ )
@@ -252,6 +267,7 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
             {
                 sampOut += delayed[ b ];
             }
+            dcFilter[ channel ].filterInPlaceHP( sampOut );
             buffer.setSample( channel, indexThroughBuffer, sampOut );
         }
     }
@@ -277,6 +293,7 @@ void Sjf_spectralProcessorAudioProcessor::getStateInformation (juce::MemoryBlock
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         bandGainParameter[ b ] = parameters.state.getPropertyAsValue("bandGain" + juce::String( b ), nullptr, true);
+        polarityParameter[ b ] = parameters.state.getPropertyAsValue("polarity" + juce::String( b ), nullptr, true);
         lfoRateParameter[ b ] = parameters.state.getPropertyAsValue("lfoRate" + juce::String( b ), nullptr, true);
         lfoDepthParameter[ b ] = parameters.state.getPropertyAsValue("lfoDepth" + juce::String( b ), nullptr, true);
         lfoOffsetParameter[ b ] = parameters.state.getPropertyAsValue("lfoOffset" + juce::String( b ), nullptr, true);
@@ -306,6 +323,7 @@ void Sjf_spectralProcessorAudioProcessor::setStateInformation (const void* data,
             for ( int b = 0; b < NUM_BANDS; b++ )
             {
                 bandGainParameter[ b ].referTo( parameters.state.getPropertyAsValue( "bandGain"+juce::String( b ), nullptr ) );
+                polarityParameter[ b ].referTo( parameters.state.getPropertyAsValue( "polarity"+juce::String( b ), nullptr ) );
                 lfoRateParameter[ b ].referTo( parameters.state.getPropertyAsValue( "lfoRate"+juce::String( b ), nullptr ) );
                 lfoDepthParameter[ b ].referTo( parameters.state.getPropertyAsValue( "lfoDepth"+juce::String( b ), nullptr ) );
                 lfoOffsetParameter[ b ].referTo( parameters.state.getPropertyAsValue( "lfoOffset"+juce::String( b ), nullptr ) );
@@ -320,6 +338,29 @@ void Sjf_spectralProcessorAudioProcessor::setStateInformation (const void* data,
 }
 
 //==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setFilterDesign( const int filterDesign )
+{
+    for ( int c = 0; c < m_filters.size(); c++ )
+    {
+        for ( int f = 0; f < NUM_BANDS; f++ )
+        {
+            m_filters[ c ][ f ].setFilterDesign( filterDesign );
+        }
+    }
+}
+//==============================================================================
+
+void Sjf_spectralProcessorAudioProcessor::setFilterOrder( const int filterOrder )
+{
+    for ( int c = 0; c < m_filters.size(); c++ )
+    {
+        for ( int f = 0; f < NUM_BANDS; f++ )
+        {
+            m_filters[ c ][ f ].setNumOrders( filterOrder );
+        }
+    }
+}
+//==============================================================================
 
 void Sjf_spectralProcessorAudioProcessor::initialiseFilters( double sampleRate)
 {
@@ -329,14 +370,16 @@ void Sjf_spectralProcessorAudioProcessor::initialiseFilters( double sampleRate)
     { 100 , 150, 250, 350, 500, 630, 800, 1000, 1300, 1600, 2000, 2600, 3500, 5000, 8000, 10000 };
 //    { 1000 };
     
+    setFilterDesign( *filterDesignParameter );
+    setFilterOrder( *filterOrderParameter );
     for ( int c = 0; c < m_filters.size(); c++ )
     {
         for ( int f = 0; f < NUM_BANDS; f++ )
         {
             m_filters[ c ][ f ].initialise( sampleRate );
-            m_filters[ c ][ f ].setNumOrders( ORDER );
+//            m_filters[ c ][ f ].setNumOrders( ORDER );
             
-            m_filters[ c ][ f ].setFilterDesign( sjf_biquadCascade<double>::filterDesign::butterworth );
+//            m_filters[ c ][ f ].setFilterDesign( sjf_biquadCascade<double>::filterDesign::butterworth );
             if ( f == 0 ){ m_filters[ c ][ f ].setFilterType( sjf_biquadCalculator<double>::filterType::lowpass ); }
             else if ( f == NUM_BANDS-1 ){ m_filters[ c ][ f ].setFilterType( sjf_biquadCalculator<double>::filterType::highpass ); }
             else { m_filters[ c ][ f ].setFilterType( sjf_biquadCalculator<double>::filterType::bandpass ); }
@@ -385,6 +428,16 @@ void Sjf_spectralProcessorAudioProcessor::setBandGain( const int bandNumber, con
 const double Sjf_spectralProcessorAudioProcessor::getBandGain( const int bandNumber )
 {
     return bandGainParameter[ bandNumber ].getValue();
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setBandPolarity( const int bandNumber, const bool flip )
+{
+    polarityParameter[ bandNumber ].setValue( flip );
+}
+//==============================================================================
+const bool Sjf_spectralProcessorAudioProcessor::getBandPolarity( const int bandNumber )
+{
+    return polarityParameter[ bandNumber ].getValue();
 }
 //==============================================================================
 void Sjf_spectralProcessorAudioProcessor::setLFORate( const int bandNumber, const double lfoR )
@@ -442,8 +495,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout Sjf_spectralProcessorAudioPr
     static constexpr int pIDVersionNumber = 1;
     juce::AudioProcessorValueTreeState::ParameterLayout params;
     
-    params.add( std::make_unique<juce::AudioParameterInt>( juce::ParameterID{ "lfoType", pIDVersionNumber }, "LfoType", 1, 2, 1 ) );
+//    filterOrder
+    params.add( std::make_unique<juce::AudioParameterInt>( juce::ParameterID{ "lfoType", pIDVersionNumber }, "LfoType", 1, 2, 2 ) );
     params.add( std::make_unique<juce::AudioParameterInt>( juce::ParameterID{ "bands", pIDVersionNumber }, "Bands", 1, 3, 1 ) );
+    params.add( std::make_unique<juce::AudioParameterInt>( juce::ParameterID{ "filterDesign", pIDVersionNumber }, "FilterDesign", 1, 3, 1 ) );
+    params.add( std::make_unique<juce::AudioParameterInt>( juce::ParameterID{ "filterOrder", pIDVersionNumber }, "FilterOrder", 2, 8, 4 ) );
     
     return params;
 }

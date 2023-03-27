@@ -66,8 +66,12 @@ public:
 
     
     int getNumBands() { return NUM_BANDS; }
+    
     void setBandGain( const int bandNumber, const double gain );
     const double getBandGain( const int bandNumber );
+    
+    void setBandPolarity( const int bandNumber, const bool flip );
+    const bool getBandPolarity( const int bandNumber );
     
     void setLFORate( const int bandNumber, const double lfoR );
     const double getLFORate( const int bandNumber );
@@ -85,6 +89,8 @@ public:
     const double getFeedback( const int bandNumber );
     
 private:
+    void setFilterDesign( const int filterDesign );
+    void setFilterOrder( const int filterOrder );
     void initialiseFilters( double sampleRate );
     void initialiseDelayLines( double sampleRate );
     void initialiseLFOs( double sampleRate );
@@ -101,11 +107,14 @@ private:
     std::array< sjf_lfo, NUM_BANDS > m_lfos;
     std::array< std::array< sjf_delayLine< float >, NUM_BANDS >, 2 > m_delayLines;
     
-    std::vector< juce::Value > bandGainParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter;
+    std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter;
     std::array< sjf_lpf< float >, NUM_BANDS > m_gainSmoother, m_delaySmoother, m_fbSmoother, m_lfoSmoother;
+    std::array< sjf_lpf< float >, 2 > dcFilter;
     
     std::atomic<float>* lfoTypeParameter = nullptr;
     std::atomic<float>* bandsParameter = nullptr;
+    std::atomic<float>* filterDesignParameter = nullptr;
+    std::atomic<float>* filterOrderParameter = nullptr;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sjf_spectralProcessorAudioProcessor)
 };
