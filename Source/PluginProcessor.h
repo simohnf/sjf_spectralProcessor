@@ -88,6 +88,12 @@ public:
     void setFeedback( const int bandNumber, const double fb );
     const double getFeedback( const int bandNumber );
     
+    void setDelayOn( const int bandNumber, const bool delayIsOn );
+    const bool getDelayOn( const int bandNumber );
+    
+    void setLfoOn( const int bandNumber, const bool lfoIsOn );
+    const bool getLfoOn( const int bandNumber );
+    
 private:
     void setFilterDesign( const int filterDesign );
     void setFilterOrder( const int filterOrder );
@@ -107,7 +113,7 @@ private:
     std::array< sjf_lfo, NUM_BANDS > m_lfos;
     std::array< std::array< sjf_delayLine< float >, NUM_BANDS >, 2 > m_delayLines;
     
-    std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter;
+    std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter, delaysOnOffParameter, lfosOnOffParameter;
     std::array< sjf_lpf< float >, NUM_BANDS > m_gainSmoother, m_delaySmoother, m_fbSmoother, m_lfoSmoother;
     std::array< sjf_lpf< float >, 2 > dcFilter;
     

@@ -45,7 +45,7 @@ private:
     juce::Label tooltipLabel;
     
     sjf_multislider bandGainsMultiSlider, lfoDepthMultiSlider, lfoRateMultiSlider, lfoOffsetMultiSlider, delayTimeMultiSlider, feedbackMultiSlider;
-    sjf_multitoggle polarityFlips;
+    sjf_multitoggle polarityFlips, delaysOnOff, lfosOnOff;
     sjf_numBox filterOrderNumBox;
     
     std::unique_ptr< juce::AudioProcessorValueTreeState::ComboBoxAttachment > lfoTypeBoxAttachment, bandsChoiceBoxAttachment, filterDesignBoxAttachment;

@@ -56,6 +56,9 @@ Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
         
         delayTimeParameter[ b ] = parameters.state.getPropertyAsValue("delayTime" + juce::String( b ), nullptr, true);
         feedbackParameter[ b ] = parameters.state.getPropertyAsValue("feedback" + juce::String( b ), nullptr, true);
+        
+        delaysOnOffParameter[ b ] = parameters.state.getPropertyAsValue("delayOnOff" + juce::String( b ), nullptr, true);
+        lfosOnOffParameter[ b ] = parameters.state.getPropertyAsValue("lfoOnOff" + juce::String( b ), nullptr, true);
     }
     
     for ( int b = 0; b < NUM_BANDS; b++ )
@@ -67,6 +70,9 @@ Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
         lfoOffsetParameter[ b ].setValue( rand01() );
         delayTimeParameter[ b ].setValue( rand01() );
         feedbackParameter[ b ].setValue( rand01() );
+        
+        delaysOnOffParameter[ b ].setValue( 0 );
+        lfosOnOffParameter[ b ].setValue( 0 );
     }
 }
 
@@ -202,7 +208,7 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
         buffer.clear (i, 0, buffer.getNumSamples());
 
     std::array< float, NUM_BANDS > lfoDepths, bandGainTargets, feedbackTarget, delayTimeTarget;
-    std::array< bool, NUM_BANDS > polarityFlip;
+    std::array< bool, NUM_BANDS > polarityFlip, lfoOn, delayOn;
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         auto r = (0.01f * std::pow( 2000.0f, (float)lfoRateParameter[ b ].getValue() ));
@@ -224,6 +230,17 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
         feedbackTarget[ b ] = (float)feedbackParameter[ b ].getValue() * 0.999f;
         
         polarityFlip[ b ] = (bool)polarityParameter[ b ].getValue();
+        
+        lfoOn[ b ] = (bool)lfosOnOffParameter[ b ].getValue();
+        delayOn[ b ] = (bool)delaysOnOffParameter[ b ].getValue();
+        
+        if ( !delayOn[ b ] )
+        {
+            for ( int c = 0; c < m_delayLines.size(); c++ )
+            {
+                m_delayLines[ c ][ b ].clearDelayline();
+            }
+        }
     }
     setFilterDesign( *filterDesignParameter );
     setFilterOrder( *filterOrderParameter );
@@ -256,16 +273,20 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
             for ( int b = 0; b < NUM_BANDS; b++ )
             {
                 gain = bandGains[ b ];
-                gain += gain * lfoOutputs[ b ];
+                if ( lfoOn[ b ] ) { gain += gain * lfoOutputs[ b ]; }
                 filteredAudio[ b ] = m_filters[ channel ][ b ].filterInput( sampIn );
                 filteredAudio[ b ] *=  gain;
-                delayed[ b ] = m_delayLines[ channel ][ b ].getSample2();
-                m_delayLines[ channel ][ b ].setSample2( filteredAudio[ b ] + delayed[ b ]*feedback[ b ]);
+                if ( delayOn[ b ] )
+                {
+                    delayed[ b ] = m_delayLines[ channel ][ b ].getSample2();
+                    m_delayLines[ channel ][ b ].setSample2( filteredAudio[ b ] + delayed[ b ] * feedback[ b ]);
+                }
             }
             // only output odd/even/all bands
             for ( int b = bandStart; b < NUM_BANDS; b += bandIncrement )
             {
-                sampOut += delayed[ b ];
+                if ( delayOn[ b ] ) { sampOut += delayed[ b ]; }
+                else { sampOut += filteredAudio[ b ]; }
             }
             dcFilter[ channel ].filterInPlaceHP( sampOut );
             buffer.setSample( channel, indexThroughBuffer, sampOut );
@@ -302,6 +323,9 @@ void Sjf_spectralProcessorAudioProcessor::getStateInformation (juce::MemoryBlock
             delayTimeParameter[ b ] = parameters.state.getPropertyAsValue("delayTime" + juce::String( b ), nullptr, true);
             feedbackParameter[ b ] = parameters.state.getPropertyAsValue("feedback" + juce::String( b ), nullptr, true);
         }
+        
+        delaysOnOffParameter[ b ] = parameters.state.getPropertyAsValue("delayOnOff" + juce::String( b ), nullptr, true);
+        lfosOnOffParameter[ b ] = parameters.state.getPropertyAsValue("lfoOnOff" + juce::String( b ), nullptr, true);
     }
     auto state = parameters.copyState();
     
@@ -332,6 +356,9 @@ void Sjf_spectralProcessorAudioProcessor::setStateInformation (const void* data,
                     delayTimeParameter[ b ].referTo( parameters.state.getPropertyAsValue("delayTime" + juce::String( b ), nullptr) );
                     feedbackParameter[ b ].referTo( parameters.state.getPropertyAsValue("feedback" + juce::String( b ), nullptr) );
                 }
+                
+                delaysOnOffParameter[ b ].referTo( parameters.state.getPropertyAsValue("delayOnOff" + juce::String( b ), nullptr) );
+                lfosOnOffParameter[ b ].referTo( parameters.state.getPropertyAsValue("lfoOnOff" + juce::String( b ), nullptr) );
             }
         }
     }
@@ -488,6 +515,26 @@ void Sjf_spectralProcessorAudioProcessor::setFeedback( const int bandNumber, con
 const double Sjf_spectralProcessorAudioProcessor::getFeedback( const int bandNumber )
 {
     return feedbackParameter[ bandNumber ].getValue();
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setDelayOn( const int bandNumber, const bool delayIsOn )
+{
+    delaysOnOffParameter[ bandNumber ].setValue( delayIsOn );
+}
+//==============================================================================
+const bool Sjf_spectralProcessorAudioProcessor::getDelayOn( const int bandNumber )
+{
+    return delaysOnOffParameter[ bandNumber ].getValue( );
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setLfoOn( const int bandNumber, const bool lfoIsOn )
+{
+    lfosOnOffParameter[ bandNumber ].setValue( lfoIsOn );
+}
+//==============================================================================
+const bool Sjf_spectralProcessorAudioProcessor::getLfoOn( const int bandNumber )
+{
+    return lfosOnOffParameter[ bandNumber ].getValue();
 }
 //==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout Sjf_spectralProcessorAudioProcessor::createParameterLayout()

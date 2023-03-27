@@ -18,7 +18,7 @@
 #define boxWidth 80
 
 #define WIDTH SLIDER_WIDTH + boxWidth + indent*3
-#define HEIGHT SLIDER_HEIGHT + 5*SLIDER_HEIGHT2 + indent*3 + textHeight*2
+#define HEIGHT SLIDER_HEIGHT + 5*SLIDER_HEIGHT2 + indent*3 + textHeight*4
 //==============================================================================
 Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEditor (Sjf_spectralProcessorAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor (&p), audioProcessor (p), valueTreeState( vts )
@@ -37,6 +37,21 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     polarityFlips.setTooltip( "This allows you to flip the polarity of individual bands" );
     polarityFlips.setLookAndFeel( &otherLookAndFeel );
     polarityFlips.sendLookAndFeelChange();
+    
+    addAndMakeVisible( &delaysOnOff );
+    delaysOnOff.setNumRows( 1 );
+    delaysOnOff.setNumColumns( NUM_BANDS );
+    delaysOnOff.setTooltip("This turns the delaylines on/off for each band");
+    delaysOnOff.setLookAndFeel( &otherLookAndFeel );
+    delaysOnOff.sendLookAndFeelChange();
+    
+    addAndMakeVisible( &lfosOnOff );
+    lfosOnOff.setNumRows( 1 );
+    lfosOnOff.setNumColumns( NUM_BANDS );
+    lfosOnOff.setTooltip("This turns the lfos on/off for each band");
+    lfosOnOff.setLookAndFeel( &otherLookAndFeel );
+    lfosOnOff.sendLookAndFeelChange();
+    
     
     
     addAndMakeVisible( &lfoDepthMultiSlider);
@@ -68,12 +83,14 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     {
         bandGainsMultiSlider.setSliderValue(b, audioProcessor.getBandGain(b) );
         polarityFlips.setToggleState( 0, b, audioProcessor.getBandPolarity( b ) );
+        
+        lfosOnOff.setToggleState( 0, b, audioProcessor.getLfoOn( b ) );
         lfoDepthMultiSlider.setSliderValue(b, audioProcessor.getLFODepth(b) );
         lfoRateMultiSlider.setSliderValue(b, audioProcessor.getLFORate(b) );
         lfoOffsetMultiSlider.setSliderValue(b, audioProcessor.getLFOOffset(b) );
         
+        delaysOnOff.setToggleState( 0, b, audioProcessor.getDelayOn( b ) );
         delayTimeMultiSlider.setSliderValue(b, audioProcessor.getDelayTime(b) );
-        DBG("DELAY TIME " << audioProcessor.getDelayTime(b) );
         feedbackMultiSlider.setSliderValue( b, audioProcessor.getFeedback(b) );
     }
     
@@ -197,11 +214,13 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     bandGainsMultiSlider.setBounds( indent, textHeight, SLIDER_WIDTH, SLIDER_HEIGHT);
     polarityFlips.setBounds( bandGainsMultiSlider.getX(), bandGainsMultiSlider.getBottom(), SLIDER_WIDTH, textHeight );
     
-    lfoDepthMultiSlider.setBounds( polarityFlips.getX(), polarityFlips.getBottom()+indent, SLIDER_WIDTH, SLIDER_HEIGHT2 );
+    lfosOnOff.setBounds( polarityFlips.getX(), polarityFlips.getBottom()+indent, SLIDER_WIDTH, textHeight );
+    lfoDepthMultiSlider.setBounds( lfosOnOff.getX(), lfosOnOff.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     lfoRateMultiSlider.setBounds( lfoDepthMultiSlider.getX(), lfoDepthMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     lfoOffsetMultiSlider.setBounds( lfoRateMultiSlider.getX(), lfoRateMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     
-    delayTimeMultiSlider.setBounds( lfoOffsetMultiSlider.getX(), lfoOffsetMultiSlider.getBottom()+indent, SLIDER_WIDTH, SLIDER_HEIGHT2 );
+    delaysOnOff.setBounds( lfoOffsetMultiSlider.getX(), lfoOffsetMultiSlider.getBottom()+indent, SLIDER_WIDTH, textHeight );
+    delayTimeMultiSlider.setBounds( delaysOnOff.getX(), delaysOnOff.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     feedbackMultiSlider.setBounds( delayTimeMultiSlider.getX(), delayTimeMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     
     lfoTypeBox.setBounds( lfoDepthMultiSlider.getRight()+indent, lfoDepthMultiSlider.getY(), boxWidth, textHeight );
@@ -224,11 +243,14 @@ void Sjf_spectralProcessorAudioProcessorEditor::timerCallback()
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         audioProcessor.setBandGain( b, bandGainsMultiSlider.fetch( b ) );
-        audioProcessor.setBandPolarity( b, polarityFlips.fetch( 1, b ) );
+        audioProcessor.setBandPolarity( b, polarityFlips.fetch( 0, b ) );
+        
+        audioProcessor.setLfoOn( b, lfosOnOff.fetch( 0, b ) );
         audioProcessor.setLFORate( b, lfoRateMultiSlider.fetch( b ) );
         audioProcessor.setLFODepth( b, lfoDepthMultiSlider.fetch( b ) );
         audioProcessor.setLFOOffset( b, lfoOffsetMultiSlider.fetch( b ) );
         
+        audioProcessor.setDelayOn( b, delaysOnOff.fetch( 0, b ) );
         audioProcessor.setDelayTime( b, delayTimeMultiSlider.fetch(b) );
         audioProcessor.setFeedback( b, feedbackMultiSlider.fetch(b) );
     }
