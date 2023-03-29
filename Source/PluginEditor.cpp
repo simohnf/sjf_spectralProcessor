@@ -17,7 +17,7 @@
 #define textHeight 20
 #define boxWidth 80
 
-#define WIDTH SLIDER_WIDTH + boxWidth + indent*3
+#define WIDTH SLIDER_WIDTH + boxWidth*2 + indent*3
 #define HEIGHT SLIDER_HEIGHT + 5*SLIDER_HEIGHT2 + indent*3 + textHeight*4
 //==============================================================================
 Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEditor (Sjf_spectralProcessorAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
@@ -161,8 +161,10 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
             //            tooltipWindow.getObject().setAlpha(0.0f);
         }
     };
-    //    tooltipWindow.getObject().setAlpha(0.0f);
-    //    tooltipsToggle.setLookAndFeel(&otherLookAndFeel);
+    
+    addAndMakeVisible( &XYpad );
+    XYpad.setTooltip( "This allows you to interpolate between the four preset settings" );
+    
     tooltipsToggle.setTooltip(MAIN_TOOLTIP);
     
     addAndMakeVisible(&tooltipLabel);
@@ -190,6 +192,7 @@ void Sjf_spectralProcessorAudioProcessorEditor::paint (juce::Graphics& g)
     juce::Rectangle<int> r = { WIDTH, HEIGHT + tooltipLabel.getHeight() };
     sjf_makeBackground< 40 >( g, r );
 
+    
     g.setColour (juce::Colours::white);
     g.setFont (15.0f);
     g.drawFittedText("sjf_spectralProcessor", 0, 0, getWidth(), textHeight, juce::Justification::centred, textHeight );
@@ -227,7 +230,10 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     bandsChoiceBox.setBounds( lfoTypeBox.getX(), lfoTypeBox.getBottom(), boxWidth, textHeight );
     filterDesignBox.setBounds( bandsChoiceBox.getX(), bandsChoiceBox.getBottom(), boxWidth, textHeight );
     filterOrderNumBox.setBounds( filterDesignBox.getX(), filterDesignBox.getBottom(), boxWidth, textHeight );
-    randomAllButton.setBounds( filterOrderNumBox.getX(), filterOrderNumBox.getBottom(), boxWidth, boxWidth );
+    
+    randomAllButton.setBounds( lfoTypeBox.getRight(), lfoTypeBox.getY(), boxWidth, boxWidth );
+    
+    XYpad.setBounds( lfoTypeBox.getX(), filterOrderNumBox.getBottom(), boxWidth*2, boxWidth*2 );
     
     tooltipsToggle.setBounds( randomAllButton.getX(), HEIGHT - textHeight - indent, boxWidth, textHeight );
     
@@ -254,4 +260,9 @@ void Sjf_spectralProcessorAudioProcessorEditor::timerCallback()
         audioProcessor.setDelayTime( b, delayTimeMultiSlider.fetch(b) );
         audioProcessor.setFeedback( b, feedbackMultiSlider.fetch(b) );
     }
+    auto pos = XYpad.getNormalisedPosition();
+    DBG( "XYpad " << pos[0] << " " << pos[1] );
+    
+    auto corners = XYpad.distanceFromCorners();
+    DBG( "Corners " << corners[0] << " " << corners[1] << " " << corners[2] << " " << corners[3] );
 }

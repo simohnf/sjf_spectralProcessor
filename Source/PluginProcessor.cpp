@@ -152,7 +152,7 @@ void Sjf_spectralProcessorAudioProcessor::prepareToPlay (double sampleRate, int 
     initialiseLFOs( sampleRate );
     initialiseSmoothers( sampleRate );
     
-    float dcCutoff = calculateLPFCoefficient< float > ( 5, sampleRate );
+    float dcCutoff = calculateLPFCoefficient< float > ( 15, sampleRate );
     for ( int c = 0; c < dcFilter.size(); c++ )
     {
         dcFilter[ c ].setCutoff( dcCutoff );
@@ -288,7 +288,7 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
                 if ( delayOn[ b ] ) { sampOut += delayed[ b ]; }
                 else { sampOut += filteredAudio[ b ]; }
             }
-            dcFilter[ channel ].filterInPlaceHP( sampOut );
+            sampOut -= dcFilter[ channel ].filterInputSecondOrder( sampOut );
             buffer.setSample( channel, indexThroughBuffer, sampOut );
         }
     }
@@ -432,7 +432,7 @@ void Sjf_spectralProcessorAudioProcessor::initialiseSmoothers( double sampleRate
     {
         m_delaySmoother[ b ].setCutoff( calculateLPFCoefficient<float>( 0.1f, (float)sampleRate ) );
         m_fbSmoother[ b ].setCutoff( calculateLPFCoefficient<float>( 0.1f, (float)sampleRate ) );
-        m_gainSmoother[ b ].setCutoff( calculateLPFCoefficient<float>( 0.1f, (float)sampleRate ) );
+        m_gainSmoother[ b ].setCutoff( calculateLPFCoefficient<float>( 5.0f, (float)sampleRate ) );
         m_lfoSmoother[ b ].setCutoff( calculateLPFCoefficient<float>( 1.0f, (float)sampleRate ) );
     }
 }

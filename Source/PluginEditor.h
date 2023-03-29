@@ -10,10 +10,12 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-#include "../../sjf_audio/sjf_multislider.h"
-#include "../../sjf_audio/sjf_multitoggle.h"
+//#include "../../sjf_audio/sjf_multislider.h"
+//#include "../../sjf_audio/sjf_multitoggle.h"
+//#include "../../sjf_audio/sjf_numBox.h"
+#include "../../sjf_audio/sjf_widgets.h"
 #include "../../sjf_audio/sjf_LookAndFeel.h"
-#include "../../sjf_audio/sjf_numBox.h"
+
 //==============================================================================
 /**
 */
@@ -47,6 +49,7 @@ private:
     sjf_multislider bandGainsMultiSlider, lfoDepthMultiSlider, lfoRateMultiSlider, lfoOffsetMultiSlider, delayTimeMultiSlider, feedbackMultiSlider;
     sjf_multitoggle polarityFlips, delaysOnOff, lfosOnOff;
     sjf_numBox filterOrderNumBox;
+    sjf_XYpad XYpad;
     
     std::unique_ptr< juce::AudioProcessorValueTreeState::ComboBoxAttachment > lfoTypeBoxAttachment, bandsChoiceBoxAttachment, filterDesignBoxAttachment;
     std::unique_ptr< juce::AudioProcessorValueTreeState::SliderAttachment > filterOrderNumBoxAttachment;
