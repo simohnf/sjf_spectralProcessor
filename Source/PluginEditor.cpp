@@ -30,6 +30,13 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     bandGainsMultiSlider.setNumSliders( NUM_BANDS );
     bandGainsMultiSlider.setTooltip( "This sets the gain for each band" );
     bandGainsMultiSlider.sendLookAndFeelChange();
+    bandGainsMultiSlider.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setBandGain( b, bandGainsMultiSlider.fetch( b ) );
+        }
+    };
     
     addAndMakeVisible( &polarityFlips );
     polarityFlips.setNumRows( 1 );
@@ -37,13 +44,15 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     polarityFlips.setTooltip( "This allows you to flip the polarity of individual bands" );
     polarityFlips.setLookAndFeel( &otherLookAndFeel );
     polarityFlips.sendLookAndFeelChange();
+    polarityFlips.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setBandPolarity( b, polarityFlips.fetch( 0, b ) );
+        }
+    };
     
-    addAndMakeVisible( &delaysOnOff );
-    delaysOnOff.setNumRows( 1 );
-    delaysOnOff.setNumColumns( NUM_BANDS );
-    delaysOnOff.setTooltip("This turns the delaylines on/off for each band");
-    delaysOnOff.setLookAndFeel( &otherLookAndFeel );
-    delaysOnOff.sendLookAndFeelChange();
+
     
     addAndMakeVisible( &lfosOnOff );
     lfosOnOff.setNumRows( 1 );
@@ -51,33 +60,89 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     lfosOnOff.setTooltip("This turns the lfos on/off for each band");
     lfosOnOff.setLookAndFeel( &otherLookAndFeel );
     lfosOnOff.sendLookAndFeelChange();
-    
+    lfosOnOff.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setLfoOn( b, lfosOnOff.fetch( 0, b ) );
+        }
+    };
     
     
     addAndMakeVisible( &lfoDepthMultiSlider);
     lfoDepthMultiSlider.setNumSliders( NUM_BANDS );
     lfoDepthMultiSlider.setTooltip( "This sets the depth of modulation for each band" );
     lfoDepthMultiSlider.sendLookAndFeelChange();
+    lfoDepthMultiSlider.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setLFODepth( b, lfoDepthMultiSlider.fetch( b ) );
+        }
+    };
     
     addAndMakeVisible( &lfoRateMultiSlider);
     lfoRateMultiSlider.setNumSliders( NUM_BANDS );
     lfoRateMultiSlider.setTooltip( "This sets the rate of modulation for each band" );
     lfoRateMultiSlider.sendLookAndFeelChange();
+    lfoRateMultiSlider.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setLFORate( b, lfoRateMultiSlider.fetch( b ) );
+        }
+    };
     
     addAndMakeVisible( &lfoOffsetMultiSlider);
     lfoOffsetMultiSlider.setNumSliders( NUM_BANDS );
     lfoOffsetMultiSlider.setTooltip( "This sets the offset of the modulation from the primary gain value" );
     lfoOffsetMultiSlider.sendLookAndFeelChange();
+    lfoOffsetMultiSlider.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setLFOOffset( b, lfoOffsetMultiSlider.fetch( b ) );
+        }
+    };
+    
+    addAndMakeVisible( &delaysOnOff );
+    delaysOnOff.setNumRows( 1 );
+    delaysOnOff.setNumColumns( NUM_BANDS );
+    delaysOnOff.setTooltip("This turns the delaylines on/off for each band");
+    delaysOnOff.setLookAndFeel( &otherLookAndFeel );
+    delaysOnOff.sendLookAndFeelChange();
+    delaysOnOff.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setDelayOn( b, delaysOnOff.fetch( 0, b ) );
+            
+        }
+    };
     
     addAndMakeVisible( &delayTimeMultiSlider );
     delayTimeMultiSlider.setNumSliders( NUM_BANDS );
     delayTimeMultiSlider.setTooltip( "This sets the delay time for each band" );
     delayTimeMultiSlider.sendLookAndFeelChange();
+    delayTimeMultiSlider.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setDelayTime( b, delayTimeMultiSlider.fetch(b) );
+        }
+    };
     
     addAndMakeVisible( &feedbackMultiSlider );
     feedbackMultiSlider.setNumSliders( NUM_BANDS );
     feedbackMultiSlider.setTooltip( "This sets the feedback for the delay line of each delayline" );
     feedbackMultiSlider.sendLookAndFeelChange();
+    feedbackMultiSlider.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setFeedback( b, feedbackMultiSlider.fetch(b) );
+        }
+    };
     
     for (int b = 0; b < NUM_BANDS; b++)
     {
@@ -164,7 +229,10 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     
     addAndMakeVisible( &XYpad );
     XYpad.setTooltip( "This allows you to interpolate between the four preset settings" );
-    
+    XYpad.onMouseEvent = [this]
+    {
+        DBG("XYPAD CHANGED!!!!");
+    };
     tooltipsToggle.setTooltip(MAIN_TOOLTIP);
     
     addAndMakeVisible(&tooltipLabel);
@@ -176,11 +244,14 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize ( WIDTH, HEIGHT );
+    
+    DBG( "Finished constucting interface");
 }
 
 Sjf_spectralProcessorAudioProcessorEditor::~Sjf_spectralProcessorAudioProcessorEditor()
 {
     setLookAndFeel( nullptr );
+    DBG( "Finished deconstucting interface");
 }
 
 //==============================================================================
@@ -244,25 +315,6 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
 void Sjf_spectralProcessorAudioProcessorEditor::timerCallback()
 {
     sjf_setTooltipLabel( this, MAIN_TOOLTIP, tooltipLabel );
-    
-    const int NUM_BANDS = audioProcessor.getNumBands();
-    for ( int b = 0; b < NUM_BANDS; b++ )
-    {
-        audioProcessor.setBandGain( b, bandGainsMultiSlider.fetch( b ) );
-        audioProcessor.setBandPolarity( b, polarityFlips.fetch( 0, b ) );
-        
-        audioProcessor.setLfoOn( b, lfosOnOff.fetch( 0, b ) );
-        audioProcessor.setLFORate( b, lfoRateMultiSlider.fetch( b ) );
-        audioProcessor.setLFODepth( b, lfoDepthMultiSlider.fetch( b ) );
-        audioProcessor.setLFOOffset( b, lfoOffsetMultiSlider.fetch( b ) );
-        
-        audioProcessor.setDelayOn( b, delaysOnOff.fetch( 0, b ) );
-        audioProcessor.setDelayTime( b, delayTimeMultiSlider.fetch(b) );
-        audioProcessor.setFeedback( b, feedbackMultiSlider.fetch(b) );
-    }
-    auto pos = XYpad.getNormalisedPosition();
-    DBG( "XYpad " << pos[0] << " " << pos[1] );
-    
-    auto corners = XYpad.distanceFromCorners();
-    DBG( "Corners " << corners[0] << " " << corners[1] << " " << corners[2] << " " << corners[3] );
+
+
 }

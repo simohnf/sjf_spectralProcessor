@@ -113,10 +113,14 @@ private:
     std::array< sjf_lfo, NUM_BANDS > m_lfos;
     std::array< std::array< sjf_delayLine< float >, NUM_BANDS >, 2 > m_delayLines;
     
-    std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter, delaysOnOffParameter, lfosOnOffParameter;
+    
     std::array< sjf_lpf< float >, NUM_BANDS > m_gainSmoother, m_delaySmoother, m_fbSmoother, m_lfoSmoother;
     std::array< sjf_lpf< float >, 2 > dcFilter;
     
+    std::array< bool, NUM_BANDS > m_polarites, m_delaysOnOff, m_lfosOnOff;
+    std::array< float, NUM_BANDS > m_bandGains, m_lfoRates, m_lfoDepths, m_lfoOffsets, m_delayTimes, m_feedbacks;
+    
+    std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter, delaysOnOffParameter, lfosOnOffParameter;
     std::atomic<float>* lfoTypeParameter = nullptr;
     std::atomic<float>* bandsParameter = nullptr;
     std::atomic<float>* filterDesignParameter = nullptr;
