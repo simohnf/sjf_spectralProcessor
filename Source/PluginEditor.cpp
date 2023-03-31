@@ -18,7 +18,7 @@
 #define boxWidth 80
 
 #define WIDTH SLIDER_WIDTH + boxWidth*2 + indent*3
-#define HEIGHT SLIDER_HEIGHT + 5*SLIDER_HEIGHT2 + indent*3 + textHeight*4
+#define HEIGHT SLIDER_HEIGHT + 6*SLIDER_HEIGHT2 + indent*3 + textHeight*4
 //==============================================================================
 Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEditor (Sjf_spectralProcessorAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor (&p), audioProcessor (p), valueTreeState( vts )
@@ -134,7 +134,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     
     addAndMakeVisible( &feedbackMultiSlider );
     feedbackMultiSlider.setNumSliders( NUM_BANDS );
-    feedbackMultiSlider.setTooltip( "This sets the feedback for the delay line of each delayline" );
+    feedbackMultiSlider.setTooltip( "This sets the feedback for the delay line of each band" );
     feedbackMultiSlider.sendLookAndFeelChange();
     feedbackMultiSlider.onMouseEvent = [this, NUM_BANDS]
     {
@@ -143,6 +143,19 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
             audioProcessor.setFeedback( b, feedbackMultiSlider.fetch(b) );
         }
     };
+    
+    addAndMakeVisible( &delayMixMultiSlider );
+    delayMixMultiSlider.setNumSliders( NUM_BANDS );
+    delayMixMultiSlider.setTooltip( "This sets the wet mix of the delay line of each band" );
+    delayMixMultiSlider.sendLookAndFeelChange();
+    delayMixMultiSlider.onMouseEvent = [this, NUM_BANDS]
+    {
+        for (int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setDelayMix( b, delayMixMultiSlider.fetch(b) );
+        }
+    };
+    
     
     for (int b = 0; b < NUM_BANDS; b++)
     {
@@ -157,6 +170,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         delaysOnOff.setToggleState( 0, b, audioProcessor.getDelayOn( b ) );
         delayTimeMultiSlider.setSliderValue(b, audioProcessor.getDelayTime(b) );
         feedbackMultiSlider.setSliderValue( b, audioProcessor.getFeedback(b) );
+        delayMixMultiSlider.setSliderValue( b, audioProcessor.getDelayMix(b) );
     }
     
     addAndMakeVisible( &lfoTypeBox );
@@ -204,9 +218,19 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
             
             delayTimeMultiSlider.setSliderValue(b, rand01() );
             feedbackMultiSlider.setSliderValue( b, rand01() );
+            delayMixMultiSlider.setSliderValue( b, rand01() );
         }
-//        bandsChoiceBox.setSelectedId( (int)(rand01()*3) + 1 );
-//        lfoTypeBox.setSelectedId( (int)(rand01()*2) + 1);
+        bandGainsMultiSlider.onMouseEvent();
+        lfoDepthMultiSlider.onMouseEvent();
+        lfoRateMultiSlider.onMouseEvent();
+        lfoOffsetMultiSlider.onMouseEvent();
+        delayTimeMultiSlider.onMouseEvent();
+        feedbackMultiSlider.onMouseEvent();
+        delayMixMultiSlider.onMouseEvent();
+        
+        polarityFlips.onMouseEvent();
+        delaysOnOff.onMouseEvent();
+        lfosOnOff.onMouseEvent();
     };
     
     addAndMakeVisible( &tooltipsToggle );
@@ -227,10 +251,31 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         }
     };
     
+    addAndMakeVisible( &xyPadXSlider );
+    xyPadXSliderAttachment.reset( new juce::AudioProcessorValueTreeState::SliderAttachment ( valueTreeState, "xyPad-X", xyPadXSlider ) );
+    xyPadXSlider.onValueChange = [this]
+    {
+        XYpad.setNormalisedXposition( xyPadXSlider.getValue() );
+    };
+    xyPadXSlider.setSliderStyle( juce::Slider::LinearBar );
+    xyPadXSlider.sendLookAndFeelChange();
+    
+    addAndMakeVisible( &xyPadYSlider );
+    xyPadYSliderAttachment.reset( new juce::AudioProcessorValueTreeState::SliderAttachment ( valueTreeState, "xyPad-Y", xyPadYSlider ) );
+    xyPadYSlider.setSliderStyle( juce::Slider::LinearBarVertical );
+    xyPadYSlider.onValueChange = [this]
+    {
+        XYpad.setNormalisedYposition( xyPadYSlider.getValue() );
+    };
+    xyPadYSlider.sendLookAndFeelChange();
+    
     addAndMakeVisible( &XYpad );
     XYpad.setTooltip( "This allows you to interpolate between the four preset settings" );
     XYpad.onMouseEvent = [this]
     {
+        auto  pos = XYpad.getNormalisedPosition();
+        if( xyPadXSlider.getValue() != pos[0] ){ xyPadXSlider.setValue( pos[0] ); }
+        if( xyPadXSlider.getValue() != pos[1] ){ xyPadYSlider.setValue( pos[1] ); }
         DBG("XYPAD CHANGED!!!!");
     };
     tooltipsToggle.setTooltip(MAIN_TOOLTIP);
@@ -279,7 +324,7 @@ void Sjf_spectralProcessorAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawFittedText("lfo offset", lfoOffsetMultiSlider.getX(), lfoOffsetMultiSlider.getY(), lfoOffsetMultiSlider.getWidth(), lfoOffsetMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     g.drawFittedText("delay time", delayTimeMultiSlider.getX(), delayTimeMultiSlider.getY(), delayTimeMultiSlider.getWidth(), delayTimeMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     g.drawFittedText("feedback", feedbackMultiSlider.getX(), feedbackMultiSlider.getY(), feedbackMultiSlider.getWidth(), feedbackMultiSlider.getHeight(), juce::Justification::centred, textHeight );
-    
+    g.drawFittedText("mix", delayMixMultiSlider.getX(), delayMixMultiSlider.getY(), delayMixMultiSlider.getWidth(), delayMixMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     
 }
 
@@ -296,6 +341,7 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     delaysOnOff.setBounds( lfoOffsetMultiSlider.getX(), lfoOffsetMultiSlider.getBottom()+indent, SLIDER_WIDTH, textHeight );
     delayTimeMultiSlider.setBounds( delaysOnOff.getX(), delaysOnOff.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     feedbackMultiSlider.setBounds( delayTimeMultiSlider.getX(), delayTimeMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
+    delayMixMultiSlider.setBounds( feedbackMultiSlider.getX(), feedbackMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     
     lfoTypeBox.setBounds( lfoDepthMultiSlider.getRight()+indent, lfoDepthMultiSlider.getY(), boxWidth, textHeight );
     bandsChoiceBox.setBounds( lfoTypeBox.getX(), lfoTypeBox.getBottom(), boxWidth, textHeight );
@@ -304,8 +350,9 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     
     randomAllButton.setBounds( lfoTypeBox.getRight(), lfoTypeBox.getY(), boxWidth, boxWidth );
     
-    XYpad.setBounds( lfoTypeBox.getX(), filterOrderNumBox.getBottom(), boxWidth*2, boxWidth*2 );
-    
+    XYpad.setBounds( lfoTypeBox.getX()+textHeight, filterOrderNumBox.getBottom(), boxWidth*2 - textHeight, boxWidth*2 - textHeight );
+    xyPadXSlider.setBounds( XYpad.getX(), XYpad.getBottom(), XYpad.getWidth(), textHeight );
+    xyPadYSlider.setBounds( lfoTypeBox.getX(), XYpad.getY(), textHeight, XYpad.getHeight() );
     tooltipsToggle.setBounds( randomAllButton.getX(), HEIGHT - textHeight - indent, boxWidth, textHeight );
     
     tooltipLabel.setBounds( 0, HEIGHT, getWidth(), textHeight*4 );
@@ -315,6 +362,4 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
 void Sjf_spectralProcessorAudioProcessorEditor::timerCallback()
 {
     sjf_setTooltipLabel( this, MAIN_TOOLTIP, tooltipLabel );
-
-
 }

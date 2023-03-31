@@ -46,13 +46,16 @@ private:
     
     juce::Label tooltipLabel;
     
-    sjf_multislider bandGainsMultiSlider, lfoDepthMultiSlider, lfoRateMultiSlider, lfoOffsetMultiSlider, delayTimeMultiSlider, feedbackMultiSlider;
+    juce::Slider xyPadXSlider, xyPadYSlider;
+    
+    sjf_multislider bandGainsMultiSlider, lfoDepthMultiSlider, lfoRateMultiSlider, lfoOffsetMultiSlider, delayTimeMultiSlider, feedbackMultiSlider, delayMixMultiSlider;
     sjf_multitoggle polarityFlips, delaysOnOff, lfosOnOff;
     sjf_numBox filterOrderNumBox;
     sjf_XYpad XYpad;
     
     std::unique_ptr< juce::AudioProcessorValueTreeState::ComboBoxAttachment > lfoTypeBoxAttachment, bandsChoiceBoxAttachment, filterDesignBoxAttachment;
     std::unique_ptr< juce::AudioProcessorValueTreeState::SliderAttachment > filterOrderNumBoxAttachment;
+    std::unique_ptr< juce::AudioProcessorValueTreeState::SliderAttachment > xyPadXSliderAttachment, xyPadYSliderAttachment;
     juce::String MAIN_TOOLTIP = "sjf_spectralProcessor: \n16 band graphic EQ with LFO modulation for gain and feedback delay lines for each band... \nNot designed for functional equalisation, but for sound design\n";
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sjf_spectralProcessorAudioProcessorEditor)

@@ -88,6 +88,9 @@ public:
     void setFeedback( const int bandNumber, const double fb );
     const double getFeedback( const int bandNumber );
     
+    void setDelayMix( const int bandNumber, const double delayMix );
+    const double getDelayMix( const int bandNumber );
+    
     void setDelayOn( const int bandNumber, const bool delayIsOn );
     const bool getDelayOn( const int bandNumber );
     
@@ -100,6 +103,7 @@ private:
     void initialiseFilters( double sampleRate );
     void initialiseDelayLines( double sampleRate );
     void initialiseLFOs( double sampleRate );
+    void initialiseDCBlock( double sampleRate );
     void initialiseSmoothers( double sampleRate );
     
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
@@ -110,21 +114,23 @@ private:
     static const int NUM_BANDS  = 16;
     
     std::array< std::array < sjf_biquadCascade< float >, NUM_BANDS >, 2 > m_filters;
-    std::array< sjf_lfo, NUM_BANDS > m_lfos;
+    std::array< sjf_lfo, NUM_BANDS > m_lfos, m_delayLfos;
     std::array< std::array< sjf_delayLine< float >, NUM_BANDS >, 2 > m_delayLines;
     
     
-    std::array< sjf_lpf< float >, NUM_BANDS > m_gainSmoother, m_delaySmoother, m_fbSmoother, m_lfoSmoother;
+    std::array< sjf_lpf< float >, NUM_BANDS > m_gainSmoother, m_delaySmoother, m_fbSmoother, m_delayWetSmoother, m_delayDrySmoother, m_lfoSmoother;
     std::array< sjf_lpf< float >, 2 > dcFilter;
     
     std::array< bool, NUM_BANDS > m_polarites, m_delaysOnOff, m_lfosOnOff;
-    std::array< float, NUM_BANDS > m_bandGains, m_lfoRates, m_lfoDepths, m_lfoOffsets, m_delayTimes, m_feedbacks;
+    std::array< float, NUM_BANDS > m_bandGains, m_lfoRates, m_lfoDepths, m_lfoOffsets, m_delayTimes, m_feedbacks, m_delayMix;
     
-    std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter, delaysOnOffParameter, lfosOnOffParameter;
+    std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter, delayMixParameter, delaysOnOffParameter, lfosOnOffParameter;
     std::atomic<float>* lfoTypeParameter = nullptr;
     std::atomic<float>* bandsParameter = nullptr;
     std::atomic<float>* filterDesignParameter = nullptr;
     std::atomic<float>* filterOrderParameter = nullptr;
+    std::atomic<float>* xParameter = nullptr;
+    std::atomic<float>* yParameter = nullptr;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sjf_spectralProcessorAudioProcessor)
 };
