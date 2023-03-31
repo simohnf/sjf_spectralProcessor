@@ -26,6 +26,9 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     const int NUM_BANDS = audioProcessor.getNumBands();
     setLookAndFeel( &otherLookAndFeel );
     
+    //------------------------------------------------------------
+    //------------------------------------------------------------
+    
     addAndMakeVisible( &bandGainsMultiSlider);
     bandGainsMultiSlider.setNumSliders( NUM_BANDS );
     bandGainsMultiSlider.setTooltip( "This sets the gain for each band" );
@@ -53,14 +56,15 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     };
     
 
-    
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     addAndMakeVisible( &lfosOnOff );
     lfosOnOff.setNumRows( 1 );
     lfosOnOff.setNumColumns( NUM_BANDS );
     lfosOnOff.setTooltip("This turns the lfos on/off for each band");
     lfosOnOff.setLookAndFeel( &otherLookAndFeel );
     lfosOnOff.sendLookAndFeelChange();
-    lfosOnOff.onMouseEvent = [this, NUM_BANDS]
+    lfosOnOff.onMouseEvent = [this, NUM_BANDS ]
     {
         for (int b = 0; b < NUM_BANDS; b++ )
         {
@@ -105,6 +109,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         }
     };
     
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     addAndMakeVisible( &delaysOnOff );
     delaysOnOff.setNumRows( 1 );
     delaysOnOff.setNumColumns( NUM_BANDS );
@@ -157,28 +163,19 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     };
     
     
-    for (int b = 0; b < NUM_BANDS; b++)
-    {
-        bandGainsMultiSlider.setSliderValue(b, audioProcessor.getBandGain(b) );
-        polarityFlips.setToggleState( 0, b, audioProcessor.getBandPolarity( b ) );
-        
-        lfosOnOff.setToggleState( 0, b, audioProcessor.getLfoOn( b ) );
-        lfoDepthMultiSlider.setSliderValue(b, audioProcessor.getLFODepth(b) );
-        lfoRateMultiSlider.setSliderValue(b, audioProcessor.getLFORate(b) );
-        lfoOffsetMultiSlider.setSliderValue(b, audioProcessor.getLFOOffset(b) );
-        
-        delaysOnOff.setToggleState( 0, b, audioProcessor.getDelayOn( b ) );
-        delayTimeMultiSlider.setSliderValue(b, audioProcessor.getDelayTime(b) );
-        feedbackMultiSlider.setSliderValue( b, audioProcessor.getFeedback(b) );
-        delayMixMultiSlider.setSliderValue( b, audioProcessor.getDelayMix(b) );
-    }
-    
+
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     addAndMakeVisible( &lfoTypeBox );
     lfoTypeBox.addItem("sine", 1);
     lfoTypeBox.addItem("rand", 2);
     lfoTypeBoxAttachment.reset( new juce::AudioProcessorValueTreeState::ComboBoxAttachment ( valueTreeState, "lfoType", lfoTypeBox ) );
     lfoTypeBox.setTooltip("This allows you to choose between two different types of modulation");
     lfoTypeBox.sendLookAndFeelChange();
+    
+    
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     
     addAndMakeVisible( &bandsChoiceBox );
     bandsChoiceBox.addItem("all", 1);
@@ -202,6 +199,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     filterOrderNumBox.setTooltip("This sets the order for all filters (higher order, steeper roll-off" );
     filterOrderNumBox.sendLookAndFeelChange();
     
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     addAndMakeVisible( &randomAllButton );
     randomAllButton.setButtonText("random");
     randomAllButton.setTooltip( "This will randomise all of the sliders" );
@@ -233,6 +232,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         lfosOnOff.onMouseEvent();
     };
     
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     addAndMakeVisible( &tooltipsToggle );
     tooltipsToggle.setButtonText( "Hints" );
     tooltipsToggle.onStateChange = [this]
@@ -250,7 +251,16 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
             //            tooltipWindow.getObject().setAlpha(0.0f);
         }
     };
+    tooltipsToggle.setTooltip(MAIN_TOOLTIP);
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     
+    addAndMakeVisible(&tooltipLabel);
+    tooltipLabel.setVisible( false );
+    tooltipLabel.setColour( juce::Label::backgroundColourId, otherLookAndFeel.backGroundColour.withAlpha( 0.85f ) );
+    tooltipLabel.setTooltip(MAIN_TOOLTIP);
+    //------------------------------------------------------------
+    //------------------------------------------------------------
     addAndMakeVisible( &xyPadXSlider );
     xyPadXSliderAttachment.reset( new juce::AudioProcessorValueTreeState::SliderAttachment ( valueTreeState, "xyPad-X", xyPadXSlider ) );
     xyPadXSlider.onValueChange = [this]
@@ -258,6 +268,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         XYpad.setNormalisedXposition( xyPadXSlider.getValue() );
     };
     xyPadXSlider.setSliderStyle( juce::Slider::LinearBar );
+    xyPadXSlider.setTextBoxIsEditable( false );
+    xyPadXSlider.setTextBoxStyle( juce::Slider:: NoTextBox, true, 0, 0 );
     xyPadXSlider.sendLookAndFeelChange();
     
     addAndMakeVisible( &xyPadYSlider );
@@ -267,6 +279,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     {
         XYpad.setNormalisedYposition( xyPadYSlider.getValue() );
     };
+    xyPadYSlider.setTextBoxStyle( juce::Slider:: NoTextBox, true, 0, 0 );
     xyPadYSlider.sendLookAndFeelChange();
     
     addAndMakeVisible( &XYpad );
@@ -276,14 +289,41 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         auto  pos = XYpad.getNormalisedPosition();
         if( xyPadXSlider.getValue() != pos[0] ){ xyPadXSlider.setValue( pos[0] ); }
         if( xyPadXSlider.getValue() != pos[1] ){ xyPadYSlider.setValue( pos[1] ); }
+        
+        audioProcessor.interpolatePresets( XYpad.distanceFromCorners() );
         DBG("XYPAD CHANGED!!!!");
     };
-    tooltipsToggle.setTooltip(MAIN_TOOLTIP);
     
-    addAndMakeVisible(&tooltipLabel);
-    tooltipLabel.setVisible( false );
-    tooltipLabel.setColour( juce::Label::backgroundColourId, otherLookAndFeel.backGroundColour.withAlpha( 0.85f ) );
-    tooltipLabel.setTooltip(MAIN_TOOLTIP);
+    
+    addAndMakeVisible( &presets );
+    presets.setIsRadioGroup( true );
+    presets.setNumRows( 1 );
+    presets.setNumColumns( 4 );
+    presets.setToggleState( 0, 0, true );
+    presets.setTooltip("This allows you to store and recall 4presets for the slider arrays that can then be interpolated between using the XYPad");
+    presets.onMouseEvent = [this, NUM_BANDS]
+    {
+        for ( int b = 0; b < NUM_BANDS; b++ )
+        {
+            audioProcessor.setBandGain( m_selectedPreset, b, bandGainsMultiSlider.fetch( b ) );
+            audioProcessor.setLFODepth( m_selectedPreset, b, lfoDepthMultiSlider.fetch( b ) );
+            audioProcessor.setLFORate( m_selectedPreset, b, lfoRateMultiSlider.fetch( b ) );
+            audioProcessor.setLFOOffset( m_selectedPreset, b, lfoOffsetMultiSlider.fetch( b ) );
+            audioProcessor.setDelayTime( m_selectedPreset, b, delayTimeMultiSlider.fetch(b) );
+            audioProcessor.setFeedback( m_selectedPreset, b, feedbackMultiSlider.fetch(b) );
+            audioProcessor.setDelayMix( m_selectedPreset, b, delayMixMultiSlider.fetch(b) );
+        }
+        
+        for ( int i = 0; i < presets.getNumButtons(); i++ ) { if( presets.fetch( 0, i ) ){ m_selectedPreset = i; } }
+        
+    };
+    presets.setLookAndFeel( &otherLookAndFeel );
+    presets.sendLookAndFeelChange();
+    //------------------------------------------------------------
+    //------------------------------------------------------------
+    
+    setParameterValues();
+    
     
     startTimer( 200 );
     // Make sure that before the constructor has finished, you've set the
@@ -350,9 +390,12 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     
     randomAllButton.setBounds( lfoTypeBox.getRight(), lfoTypeBox.getY(), boxWidth, boxWidth );
     
-    XYpad.setBounds( lfoTypeBox.getX()+textHeight, filterOrderNumBox.getBottom(), boxWidth*2 - textHeight, boxWidth*2 - textHeight );
-    xyPadXSlider.setBounds( XYpad.getX(), XYpad.getBottom(), XYpad.getWidth(), textHeight );
-    xyPadYSlider.setBounds( lfoTypeBox.getX(), XYpad.getY(), textHeight, XYpad.getHeight() );
+    presets.setBounds( lfoTypeBox.getX(), filterOrderNumBox.getBottom() + indent, boxWidth*2, textHeight );
+//    auto xySliderSize = textHeight/2;
+    XYpad.setBounds( presets.getX()+ indent, presets.getBottom(), boxWidth*2 - indent, boxWidth*2 - indent );
+    xyPadXSlider.setBounds( XYpad.getX(), XYpad.getBottom(), XYpad.getWidth(), indent );
+    xyPadYSlider.setBounds( lfoTypeBox.getX(), XYpad.getY(), indent, XYpad.getHeight() );
+    
     tooltipsToggle.setBounds( randomAllButton.getX(), HEIGHT - textHeight - indent, boxWidth, textHeight );
     
     tooltipLabel.setBounds( 0, HEIGHT, getWidth(), textHeight*4 );
@@ -362,4 +405,31 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
 void Sjf_spectralProcessorAudioProcessorEditor::timerCallback()
 {
     sjf_setTooltipLabel( this, MAIN_TOOLTIP, tooltipLabel );
+    
+    if( audioProcessor.checkIfParametersChanged() ) { setParameterValues(); }
+    audioProcessor.setParametersChangedFalse();
+    
+}
+
+
+
+void Sjf_spectralProcessorAudioProcessorEditor::setParameterValues()
+{
+    const int NUM_BANDS = audioProcessor.getNumBands();
+    
+    for (int b = 0; b < NUM_BANDS; b++)
+    {
+        bandGainsMultiSlider.setSliderValue(b, audioProcessor.getBandGain(b) );
+        polarityFlips.setToggleState( 0, b, audioProcessor.getBandPolarity( b ) );
+        
+        lfosOnOff.setToggleState( 0, b, audioProcessor.getLfoOn( b ) );
+        lfoDepthMultiSlider.setSliderValue(b, audioProcessor.getLFODepth(b) );
+        lfoRateMultiSlider.setSliderValue(b, audioProcessor.getLFORate(b) );
+        lfoOffsetMultiSlider.setSliderValue(b, audioProcessor.getLFOOffset(b) );
+        
+        delaysOnOff.setToggleState( 0, b, audioProcessor.getDelayOn( b ) );
+        delayTimeMultiSlider.setSliderValue(b, audioProcessor.getDelayTime(b) );
+        feedbackMultiSlider.setSliderValue( b, audioProcessor.getFeedback(b) );
+        delayMixMultiSlider.setSliderValue( b, audioProcessor.getDelayMix(b) );
+    }
 }

@@ -31,7 +31,7 @@ public:
 
 private:
     void timerCallback() override;
-    
+    void setParameterValues();
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -49,9 +49,11 @@ private:
     juce::Slider xyPadXSlider, xyPadYSlider;
     
     sjf_multislider bandGainsMultiSlider, lfoDepthMultiSlider, lfoRateMultiSlider, lfoOffsetMultiSlider, delayTimeMultiSlider, feedbackMultiSlider, delayMixMultiSlider;
-    sjf_multitoggle polarityFlips, delaysOnOff, lfosOnOff;
+    sjf_multitoggle polarityFlips, delaysOnOff, lfosOnOff, presets;
     sjf_numBox filterOrderNumBox;
     sjf_XYpad XYpad;
+    
+    int m_selectedPreset = 0;
     
     std::unique_ptr< juce::AudioProcessorValueTreeState::ComboBoxAttachment > lfoTypeBoxAttachment, bandsChoiceBoxAttachment, filterDesignBoxAttachment;
     std::unique_ptr< juce::AudioProcessorValueTreeState::SliderAttachment > filterOrderNumBoxAttachment;

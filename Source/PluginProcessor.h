@@ -97,6 +97,32 @@ public:
     void setLfoOn( const int bandNumber, const bool lfoIsOn );
     const bool getLfoOn( const int bandNumber );
     
+    void setParametersChangedFalse() { m_parametersChangedFlag = false; }
+    bool checkIfParametersChanged() { return m_parametersChangedFlag; }
+    
+    
+    void setBandGain( const int presetNumber, const int bandNumber, const double gain );
+    const double getBandGain( const int presetNumber, const int bandNumber );
+    
+    void setLFORate( const int presetNumber, const int bandNumber, const double lfoR );
+    const double getLFORate( const int presetNumber, const int bandNumber );
+    
+    void setLFODepth( const int presetNumber, const int bandNumber, const double lfoD );
+    const double getLFODepth( const int presetNumber, const int bandNumber );
+    
+    void setLFOOffset( const int presetNumber, const int bandNumber, const double lfoOffset );
+    const double getLFOOffset( const int presetNumber, const int bandNumber );
+    
+    void setDelayTime( const int presetNumber, const int bandNumber, const double delay );
+    const double getDelayTime( const int presetNumber, const int bandNumber );
+    
+    void setFeedback( const int presetNumber, const int bandNumber, const double fb );
+    const double getFeedback( const int presetNumber, const int bandNumber );
+    
+    void setDelayMix( const int presetNumber, const int bandNumber, const double delayMix );
+    const double getDelayMix( const int presetNumber, const int bandNumber );
+    
+    void interpolatePresets( std::array< float, 4 > weights );
 private:
     void setFilterDesign( const int filterDesign );
     void setFilterOrder( const int filterOrder );
@@ -106,12 +132,14 @@ private:
     void initialiseDCBlock( double sampleRate );
     void initialiseSmoothers( double sampleRate );
     
+    
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
     
     static const int NUM_BANDS  = 16;
+    bool m_parametersChangedFlag = false;
     
     std::array< std::array < sjf_biquadCascade< float >, NUM_BANDS >, 2 > m_filters;
     std::array< sjf_lfo, NUM_BANDS > m_lfos, m_delayLfos;
@@ -124,7 +152,12 @@ private:
     std::array< bool, NUM_BANDS > m_polarites, m_delaysOnOff, m_lfosOnOff;
     std::array< float, NUM_BANDS > m_bandGains, m_lfoRates, m_lfoDepths, m_lfoOffsets, m_delayTimes, m_feedbacks, m_delayMix;
     
+    std::array< std::array< float, NUM_BANDS >, 4 > m_bandGainsPresets, m_lfoRatesPresets, m_lfoDepthsPresets, m_lfoOffsetsPresets, m_delayTimesPresets, m_feedbacksPresets, m_delayMixPresets;
+    
     std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter, delayMixParameter, delaysOnOffParameter, lfosOnOffParameter;
+    
+    std::array< std::array< juce::Value, NUM_BANDS >, 4 > bandGainPresetsParameter, polarityPresetsParameter, lfoRatePresetsParameter, lfoDepthPresetsParameter, lfoOffsetPresetsParameter, delayTimePresetsParameter, feedbackPresetsParameter, delayMixPresetsParameter, delaysOnOffPresetsParameter, lfosOnOffPresetsParameter;
+    
     std::atomic<float>* lfoTypeParameter = nullptr;
     std::atomic<float>* bandsParameter = nullptr;
     std::atomic<float>* filterDesignParameter = nullptr;
