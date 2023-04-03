@@ -54,7 +54,7 @@ private:
     sjf_XYpad XYpad;
     
     int m_selectedPreset = 0;
-    
+    bool m_canSavePreset = true;
     std::unique_ptr< juce::AudioProcessorValueTreeState::ComboBoxAttachment > lfoTypeBoxAttachment, bandsChoiceBoxAttachment, filterDesignBoxAttachment;
     std::unique_ptr< juce::AudioProcessorValueTreeState::SliderAttachment > filterOrderNumBoxAttachment;
     std::unique_ptr< juce::AudioProcessorValueTreeState::SliderAttachment > xyPadXSliderAttachment, xyPadYSliderAttachment;

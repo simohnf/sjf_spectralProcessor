@@ -412,6 +412,22 @@ void Sjf_spectralProcessorAudioProcessor::setStateInformation (const void* data,
                 m_delaysOnOff[ b ] = (bool)delaysOnOffParameter[ b ].getValue();
                 m_lfosOnOff[ b ] = (bool)lfosOnOffParameter[ b ].getValue();
             }
+            
+            for ( int b = 0; b < NUM_BANDS; b++ )
+            {
+                for ( int i = 0; i < m_bandGainsPresets.size(); i++ )
+                {
+                    m_bandGainsPresets[ i ][ b ] = (float)bandGainPresetsParameter[ i ][ b ].getValue();
+                    m_lfoRatesPresets[ i ][ b ] = (float)lfoRatePresetsParameter[ i ][ b ].getValue();
+                    m_lfoDepthsPresets[ i ][ b ] =  (float)lfoDepthPresetsParameter[ i ][ b ].getValue();
+                    m_lfoOffsetsPresets[ i ][ b ] = (float)lfoOffsetPresetsParameter[ i ][ b ].getValue();
+                    
+                    m_delayTimesPresets[ i ][ b ] = (float)delayTimePresetsParameter[ i ][ b ].getValue();
+                    m_feedbacksPresets[ i ][ b ] = (float)feedbackPresetsParameter[ i ][ b ].getValue();
+                    m_delayMixPresets[ i ][ b ] = (float)delayMixPresetsParameter[ i ][ b ].getValue();
+                    
+                }
+            }
         }
         
         m_parametersChangedFlag = true;
@@ -679,6 +695,21 @@ void Sjf_spectralProcessorAudioProcessor::setDelayMix( const int presetNumber, c
 const double Sjf_spectralProcessorAudioProcessor::getDelayMix( const int presetNumber, const int bandNumber )
 {
     return m_delayMixPresets[ presetNumber ][ bandNumber ];
+}
+//==============================================================================
+void Sjf_spectralProcessorAudioProcessor::getPreset(const int presetNumber)
+{
+    for ( int b = 0; b < NUM_BANDS; b++ )
+    {
+        m_bandGains[ b ] = m_bandGainsPresets[ presetNumber ][ b ];
+        m_lfoRates[ b ] = m_lfoRatesPresets[ presetNumber ][ b ];
+        m_lfoDepths[ b ] = m_lfoDepthsPresets[ presetNumber ][ b ];
+        m_lfoOffsets[ b ] = m_lfoOffsetsPresets[ presetNumber ][ b ];
+        m_delayTimes[ b ] = m_delayTimesPresets[ presetNumber ][ b ];
+        m_feedbacks[ b ] = m_feedbacksPresets[ presetNumber ][ b ];
+        m_delayMix[ b ] = m_delayMixPresets[ presetNumber ][ b ];
+    }
+    m_parametersChangedFlag = true;
 }
 //==============================================================================
 void Sjf_spectralProcessorAudioProcessor::interpolatePresets( std::array< float, 4 > weights )

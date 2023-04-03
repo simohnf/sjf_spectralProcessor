@@ -122,6 +122,8 @@ public:
     void setDelayMix( const int presetNumber, const int bandNumber, const double delayMix );
     const double getDelayMix( const int presetNumber, const int bandNumber );
     
+    void getPreset(const int presetNumber);
+    
     void interpolatePresets( std::array< float, 4 > weights );
 private:
     void setFilterDesign( const int filterDesign );

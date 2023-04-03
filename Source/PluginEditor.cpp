@@ -39,6 +39,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         {
             audioProcessor.setBandGain( b, bandGainsMultiSlider.fetch( b ) );
         }
+        m_canSavePreset = true;
     };
     
     addAndMakeVisible( &polarityFlips );
@@ -53,6 +54,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         {
             audioProcessor.setBandPolarity( b, polarityFlips.fetch( 0, b ) );
         }
+        m_canSavePreset = true;
     };
     
 
@@ -70,6 +72,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         {
             audioProcessor.setLfoOn( b, lfosOnOff.fetch( 0, b ) );
         }
+        m_canSavePreset = true;
     };
     
     
@@ -95,6 +98,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         {
             audioProcessor.setLFORate( b, lfoRateMultiSlider.fetch( b ) );
         }
+        m_canSavePreset = true;
     };
     
     addAndMakeVisible( &lfoOffsetMultiSlider);
@@ -107,6 +111,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         {
             audioProcessor.setLFOOffset( b, lfoOffsetMultiSlider.fetch( b ) );
         }
+        m_canSavePreset = true;
     };
     
     //------------------------------------------------------------
@@ -122,8 +127,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         for (int b = 0; b < NUM_BANDS; b++ )
         {
             audioProcessor.setDelayOn( b, delaysOnOff.fetch( 0, b ) );
-            
         }
+        m_canSavePreset = true;
     };
     
     addAndMakeVisible( &delayTimeMultiSlider );
@@ -134,8 +139,9 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     {
         for (int b = 0; b < NUM_BANDS; b++ )
         {
-            audioProcessor.setDelayTime( b, delayTimeMultiSlider.fetch(b) );
+            audioProcessor.setDelayTime( b, delayTimeMultiSlider.fetch( b ) );
         }
+        m_canSavePreset = true;
     };
     
     addAndMakeVisible( &feedbackMultiSlider );
@@ -146,8 +152,9 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     {
         for (int b = 0; b < NUM_BANDS; b++ )
         {
-            audioProcessor.setFeedback( b, feedbackMultiSlider.fetch(b) );
+            audioProcessor.setFeedback( b, feedbackMultiSlider.fetch( b ) );
         }
+        m_canSavePreset = true;
     };
     
     addAndMakeVisible( &delayMixMultiSlider );
@@ -158,8 +165,9 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     {
         for (int b = 0; b < NUM_BANDS; b++ )
         {
-            audioProcessor.setDelayMix( b, delayMixMultiSlider.fetch(b) );
+            audioProcessor.setDelayMix( b, delayMixMultiSlider.fetch( b ) );
         }
+        m_canSavePreset = true;
     };
     
     
@@ -230,6 +238,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         polarityFlips.onMouseEvent();
         delaysOnOff.onMouseEvent();
         lfosOnOff.onMouseEvent();
+        
+        m_canSavePreset = true;
     };
     
     //------------------------------------------------------------
@@ -266,6 +276,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     xyPadXSlider.onValueChange = [this]
     {
         XYpad.setNormalisedXposition( xyPadXSlider.getValue() );
+        XYpad.onMouseEvent();
     };
     xyPadXSlider.setSliderStyle( juce::Slider::LinearBar );
     xyPadXSlider.setTextBoxIsEditable( false );
@@ -278,6 +289,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     xyPadYSlider.onValueChange = [this]
     {
         XYpad.setNormalisedYposition( xyPadYSlider.getValue() );
+        XYpad.onMouseEvent();
     };
     xyPadYSlider.setTextBoxStyle( juce::Slider:: NoTextBox, true, 0, 0 );
     xyPadYSlider.sendLookAndFeelChange();
@@ -291,6 +303,8 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         if( xyPadXSlider.getValue() != pos[1] ){ xyPadYSlider.setValue( pos[1] ); }
         
         audioProcessor.interpolatePresets( XYpad.distanceFromCorners() );
+        
+        m_canSavePreset = false;
         DBG("XYPAD CHANGED!!!!");
     };
     
@@ -303,19 +317,47 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     presets.setTooltip("This allows you to store and recall 4presets for the slider arrays that can then be interpolated between using the XYPad");
     presets.onMouseEvent = [this, NUM_BANDS]
     {
-        for ( int b = 0; b < NUM_BANDS; b++ )
+        if ( m_canSavePreset )
         {
-            audioProcessor.setBandGain( m_selectedPreset, b, bandGainsMultiSlider.fetch( b ) );
-            audioProcessor.setLFODepth( m_selectedPreset, b, lfoDepthMultiSlider.fetch( b ) );
-            audioProcessor.setLFORate( m_selectedPreset, b, lfoRateMultiSlider.fetch( b ) );
-            audioProcessor.setLFOOffset( m_selectedPreset, b, lfoOffsetMultiSlider.fetch( b ) );
-            audioProcessor.setDelayTime( m_selectedPreset, b, delayTimeMultiSlider.fetch(b) );
-            audioProcessor.setFeedback( m_selectedPreset, b, feedbackMultiSlider.fetch(b) );
-            audioProcessor.setDelayMix( m_selectedPreset, b, delayMixMultiSlider.fetch(b) );
+            for ( int b = 0; b < NUM_BANDS; b++ )
+            {
+                audioProcessor.setBandGain( m_selectedPreset, b, bandGainsMultiSlider.fetch( b ) );
+                audioProcessor.setLFODepth( m_selectedPreset, b, lfoDepthMultiSlider.fetch( b ) );
+                audioProcessor.setLFORate( m_selectedPreset, b, lfoRateMultiSlider.fetch( b ) );
+                audioProcessor.setLFOOffset( m_selectedPreset, b, lfoOffsetMultiSlider.fetch( b ) );
+                audioProcessor.setDelayTime( m_selectedPreset, b, delayTimeMultiSlider.fetch(b) );
+                audioProcessor.setFeedback( m_selectedPreset, b, feedbackMultiSlider.fetch(b) );
+                audioProcessor.setDelayMix( m_selectedPreset, b, delayMixMultiSlider.fetch(b) );
+            }
         }
         
         for ( int i = 0; i < presets.getNumButtons(); i++ ) { if( presets.fetch( 0, i ) ){ m_selectedPreset = i; } }
         
+        audioProcessor.getPreset( m_selectedPreset );
+        std::array< float, 2 > pos;
+        switch( m_selectedPreset )
+        {
+            case 0:
+                pos[ 0 ] = pos[ 1 ] = 0;
+                break;
+            case 1:
+                pos[ 0 ] = 1;
+                pos[ 1 ] = 0;
+                break;
+            case 2:
+                pos[ 0 ] = 1;
+                pos[ 1 ] = 1;
+                break;
+            case 3:
+                pos[ 0 ] = 0;
+                pos[ 1 ] = 1;
+                break;
+        }
+        XYpad.setNormalisedPosition( pos );
+        xyPadXSlider.setValue( pos[0] );
+        xyPadYSlider.setValue( pos[1] );
+        
+//        m_canSavePreset = true;
     };
     presets.setLookAndFeel( &otherLookAndFeel );
     presets.sendLookAndFeelChange();
