@@ -314,14 +314,17 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     presets.setNumRows( 1 );
     presets.setNumColumns( 4 );
     presets.setToggleState( 0, 0, true );
-    presets.setTooltip("This allows you to store and recall 4presets for the slider arrays that can then be interpolated between using the XYPad");
+    presets.setTooltip("This allows you to store and recall 4 presets for the slider arrays that can then be interpolated between using the XYPad \nWhen you click on a new preset number any changes made will be stored in the previously selected preset, if you make changes and then select the same preset again you will reload the previously saved preset and lose those changes");
     presets.onMouseEvent = [this, NUM_BANDS]
     {
-        if ( m_canSavePreset )
+        int newSelection = 0;
+        for ( int i = 0; i < presets.getNumButtons(); i++ ) { if( presets.fetch( 0, i ) ){ newSelection = i; } }
+        if ( m_canSavePreset && newSelection != m_selectedPreset )
         {
             for ( int b = 0; b < NUM_BANDS; b++ )
             {
                 audioProcessor.setBandGain( m_selectedPreset, b, bandGainsMultiSlider.fetch( b ) );
+                audioProcessor.setBandPolarity( m_selectedPreset, b, polarityFlips.fetch( 0, b) );
                 audioProcessor.setLFODepth( m_selectedPreset, b, lfoDepthMultiSlider.fetch( b ) );
                 audioProcessor.setLFORate( m_selectedPreset, b, lfoRateMultiSlider.fetch( b ) );
                 audioProcessor.setLFOOffset( m_selectedPreset, b, lfoOffsetMultiSlider.fetch( b ) );
@@ -331,7 +334,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
             }
         }
         
-        for ( int i = 0; i < presets.getNumButtons(); i++ ) { if( presets.fetch( 0, i ) ){ m_selectedPreset = i; } }
+        m_selectedPreset = newSelection;
         
         audioProcessor.getPreset( m_selectedPreset );
         std::array< float, 2 > pos;
@@ -372,12 +375,15 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     // editor's size to whatever you need it to be.
     setSize ( WIDTH, HEIGHT );
     
+    
+    audioProcessor.isEditorOpen( true );
     DBG( "Finished constucting interface");
 }
 
 Sjf_spectralProcessorAudioProcessorEditor::~Sjf_spectralProcessorAudioProcessorEditor()
 {
     setLookAndFeel( nullptr );
+    audioProcessor.isEditorOpen( false );
     DBG( "Finished deconstucting interface");
 }
 
@@ -407,6 +413,9 @@ void Sjf_spectralProcessorAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawFittedText("delay time", delayTimeMultiSlider.getX(), delayTimeMultiSlider.getY(), delayTimeMultiSlider.getWidth(), delayTimeMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     g.drawFittedText("feedback", feedbackMultiSlider.getX(), feedbackMultiSlider.getY(), feedbackMultiSlider.getWidth(), feedbackMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     g.drawFittedText("mix", delayMixMultiSlider.getX(), delayMixMultiSlider.getY(), delayMixMultiSlider.getWidth(), delayMixMultiSlider.getHeight(), juce::Justification::centred, textHeight );
+    
+    g.drawFittedText("presets", presets.getX(), presets.getY(), presets.getWidth(), presets.getHeight(), juce::Justification::centred, textHeight );
+    g.drawFittedText("presets", XYpad.getX(), XYpad.getY(), XYpad.getWidth(), XYpad.getHeight(), juce::Justification::centred, textHeight );
     
 }
 

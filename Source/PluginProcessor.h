@@ -104,6 +104,9 @@ public:
     void setBandGain( const int presetNumber, const int bandNumber, const double gain );
     const double getBandGain( const int presetNumber, const int bandNumber );
     
+    void setBandPolarity( const int presetNumber, const int bandNumber, const bool flip );
+    const bool getBandPolarity( const int presetNumber, const int bandNumber );
+    
     void setLFORate( const int presetNumber, const int bandNumber, const double lfoR );
     const double getLFORate( const int presetNumber, const int bandNumber );
     
@@ -125,6 +128,8 @@ public:
     void getPreset(const int presetNumber);
     
     void interpolatePresets( std::array< float, 4 > weights );
+    
+    void isEditorOpen( const bool editorIsOpen ){ m_editorOpenFlag = editorIsOpen; }
 private:
     void setFilterDesign( const int filterDesign );
     void setFilterOrder( const int filterOrder );
@@ -141,7 +146,7 @@ private:
     juce::AudioProcessorValueTreeState parameters;
     
     static const int NUM_BANDS  = 16;
-    bool m_parametersChangedFlag = false;
+    bool m_parametersChangedFlag = false, m_editorOpenFlag = false;
     
     std::array< std::array < sjf_biquadCascade< float >, NUM_BANDS >, 2 > m_filters;
     std::array< sjf_lfo, NUM_BANDS > m_lfos, m_delayLfos;
@@ -155,6 +160,8 @@ private:
     std::array< float, NUM_BANDS > m_bandGains, m_lfoRates, m_lfoDepths, m_lfoOffsets, m_delayTimes, m_feedbacks, m_delayMix;
     
     std::array< std::array< float, NUM_BANDS >, 4 > m_bandGainsPresets, m_lfoRatesPresets, m_lfoDepthsPresets, m_lfoOffsetsPresets, m_delayTimesPresets, m_feedbacksPresets, m_delayMixPresets;
+    
+    std::array< std::array< bool, NUM_BANDS >, 4 > m_polarityPresets;
     
     std::array< juce::Value, NUM_BANDS > bandGainParameter, polarityParameter, lfoRateParameter, lfoDepthParameter, lfoOffsetParameter, delayTimeParameter, feedbackParameter, delayMixParameter, delaysOnOffParameter, lfosOnOffParameter;
     

@@ -55,6 +55,7 @@ Sjf_spectralProcessorAudioProcessor::Sjf_spectralProcessorAudioProcessor()
         for ( int i = 0; i < m_bandGainsPresets.size(); i++ )
         {
             m_bandGainsPresets[ i ][ b ] = 1.0f;
+            m_polarityPresets[ i ][ b ] = false;
             m_lfoRatesPresets[ i ][ b ] = 0.5f;
             m_lfoDepthsPresets[ i ][ b ] = 0.5f;
             m_lfoOffsetsPresets[ i ][ b ] = 0.5f;
@@ -198,6 +199,21 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    if ( !m_editorOpenFlag )
+    {
+        std::array< float, 2 > nPos = { *xParameter, *yParameter };
+        std::array< float, 4 > corners;
+        corners[0] = std::sqrt( std::pow(nPos[0], 2) + std::pow(nPos[1], 2) );
+        corners[1] = std::sqrt( std::pow(1.0f - nPos[0], 2) + std::pow(nPos[1], 2) );
+        corners[2] = std::sqrt( std::pow(1.0f - nPos[0], 2) + std::pow(1.0f - nPos[1], 2) );
+        corners[3] = std::sqrt( std::pow(nPos[0], 2) + std::pow(1.0f - nPos[1], 2) );
+        for ( int i = 0; i < corners.size(); i++ )
+        {
+            corners[i] = std::fmax( 0, 1.0f - corners[i] );
+        }
+        interpolatePresets( corners );
+    }
+    
     std::array< float, NUM_BANDS > lfoDepths, bandGainTargets, feedbackTarget, delayTimeTarget;
     std::array< bool, NUM_BANDS > polarityFlip, lfoOn, delayOn;
     for ( int b = 0; b < NUM_BANDS; b++ )
@@ -336,6 +352,7 @@ void Sjf_spectralProcessorAudioProcessor::getStateInformation (juce::MemoryBlock
         for ( int i = 0; i < m_bandGainsPresets.size(); i++ )
         {
             bandGainPresetsParameter[ i ][ b ].setValue( m_bandGainsPresets[ i ][ b ] );
+            polarityPresetsParameter[ i ][ b ].setValue( m_polarityPresets[ i ][ b ] );
             
             lfoRatePresetsParameter[ i ][ b ].setValue( m_lfoRatesPresets[ i ][ b ] );
             lfoDepthPresetsParameter[ i ][ b ].setValue( m_lfoDepthsPresets[ i ][ b ] );
@@ -370,6 +387,8 @@ void Sjf_spectralProcessorAudioProcessor::setStateInformation (const void* data,
                 for ( int i = 0; i < m_bandGainsPresets.size(); i++ )
                 {
                     bandGainPresetsParameter[ i ][ b ].referTo( parameters.state.getPropertyAsValue( "bandGain"+juce::String(i)+"_"+juce::String( b ), nullptr ) );
+                    polarityPresetsParameter[ i ][ b ].referTo( parameters.state.getPropertyAsValue( "polarity"+juce::String(i)+"_"+juce::String( b ), nullptr ) );
+                    
                     lfoRatePresetsParameter[ i ][ b ].referTo( parameters.state.getPropertyAsValue( "lfoRate"+juce::String(i)+"_"+juce::String( b ), nullptr ) );
                     lfoDepthPresetsParameter[ i ][ b ].referTo( parameters.state.getPropertyAsValue( "lfoDepth"+juce::String(i)+"_"+juce::String( b ), nullptr ) );
                     lfoOffsetPresetsParameter[ i ][ b ].referTo( parameters.state.getPropertyAsValue( "lfoOffset"+juce::String(i)+"_"+juce::String( b ), nullptr ) );
@@ -418,6 +437,8 @@ void Sjf_spectralProcessorAudioProcessor::setStateInformation (const void* data,
                 for ( int i = 0; i < m_bandGainsPresets.size(); i++ )
                 {
                     m_bandGainsPresets[ i ][ b ] = (float)bandGainPresetsParameter[ i ][ b ].getValue();
+                    m_polarityPresets[ i ][ b ] = (bool)polarityPresetsParameter[ i ][ b ].getValue();
+                    
                     m_lfoRatesPresets[ i ][ b ] = (float)lfoRatePresetsParameter[ i ][ b ].getValue();
                     m_lfoDepthsPresets[ i ][ b ] =  (float)lfoDepthPresetsParameter[ i ][ b ].getValue();
                     m_lfoOffsetsPresets[ i ][ b ] = (float)lfoOffsetPresetsParameter[ i ][ b ].getValue();
@@ -637,6 +658,16 @@ const double Sjf_spectralProcessorAudioProcessor::getBandGain( const int presetN
     return m_bandGainsPresets[ presetNumber ][ bandNumber ];
 }
 //==============================================================================
+void Sjf_spectralProcessorAudioProcessor::setBandPolarity( const int presetNumber, const int bandNumber, const bool flip )
+{
+    m_polarityPresets[ presetNumber ][ bandNumber ] = flip;
+}
+//==============================================================================
+const bool Sjf_spectralProcessorAudioProcessor::getBandPolarity( const int presetNumber, const int bandNumber )
+{
+    return m_polarityPresets[ presetNumber ][ bandNumber ];
+}
+//==============================================================================
 void Sjf_spectralProcessorAudioProcessor::setLFORate( const int presetNumber, const int bandNumber, const double lfoR )
 {
     m_lfoRatesPresets[ presetNumber ][ bandNumber ] = lfoR;
@@ -702,6 +733,8 @@ void Sjf_spectralProcessorAudioProcessor::getPreset(const int presetNumber)
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         m_bandGains[ b ] = m_bandGainsPresets[ presetNumber ][ b ];
+        m_polarites[ b ] = m_polarityPresets[ presetNumber ][ b ];
+        
         m_lfoRates[ b ] = m_lfoRatesPresets[ presetNumber ][ b ];
         m_lfoDepths[ b ] = m_lfoDepthsPresets[ presetNumber ][ b ];
         m_lfoOffsets[ b ] = m_lfoOffsetsPresets[ presetNumber ][ b ];
@@ -718,9 +751,12 @@ void Sjf_spectralProcessorAudioProcessor::interpolatePresets( std::array< float,
     for ( int i = 0; i < weights.size(); i++ ) { total += weights[ i ]; }
     for ( int i = 0; i < weights.size(); i++ ) { weights[ i ] /= total; }
     
+    std::array< float, NUM_BANDS > polarityFlips;
     for ( int b = 0; b < NUM_BANDS; b++ )
     {
         m_bandGains[ b ] = 0;
+        polarityFlips[ b ] = 0;
+        m_polarites[ b ] = false;
         m_lfoRates[ b ] = 0;
         m_lfoDepths[ b ] = 0;
         m_lfoOffsets[ b ] = 0;
@@ -733,6 +769,9 @@ void Sjf_spectralProcessorAudioProcessor::interpolatePresets( std::array< float,
         for ( int i = 0; i < weights.size(); i++ )
         {
             m_bandGains[ b ] += m_bandGainsPresets[ i ][ b ]*weights[ i ];
+            if (m_polarityPresets[ i ][ b ]){ polarityFlips[ b ] += weights[ i ]; }
+            else { polarityFlips[ b ] -= weights[ i ]; }
+            
             m_lfoRates[ b ] += m_lfoRatesPresets[ i ][ b ]*weights[ i ];
             m_lfoDepths[ b ] += m_lfoDepthsPresets[ i ][ b ]*weights[ i ];
             m_lfoOffsets[ b ] += m_lfoOffsetsPresets[ i ][ b ]*weights[ i ];
@@ -740,6 +779,7 @@ void Sjf_spectralProcessorAudioProcessor::interpolatePresets( std::array< float,
             m_feedbacks[ b ] += m_feedbacksPresets[ i ][ b ]*weights[ i ];
             m_delayMix[ b ] += m_delayMixPresets[ i ][ b ]*weights[ i ];
         }
+        if ( polarityFlips[ b ] > 0 ) { m_polarites[ b ] = true; }
     }
     m_parametersChangedFlag = true;
 }
