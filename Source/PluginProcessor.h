@@ -26,6 +26,7 @@ class Sjf_spectralProcessorAudioProcessor  : public juce::AudioProcessor
                              , public juce::AudioProcessorARAExtension
                             #endif
 {
+    static const int NUM_BANDS  = 16;
 public:
     //==============================================================================
     Sjf_spectralProcessorAudioProcessor();
@@ -127,9 +128,13 @@ public:
     
     void getPreset(const int presetNumber);
     
+//    const std::array< double, NUM_BANDS > getFrequencies{ return frequencies; }
+    
     void interpolatePresets( std::array< float, 4 > weights );
     
     void isEditorOpen( const bool editorIsOpen ){ m_editorOpenFlag = editorIsOpen; }
+    
+    
 private:
     void setFilterDesign( const int filterDesign );
     void setFilterOrder( const int filterOrder );
@@ -145,7 +150,11 @@ private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
     
-    static const int NUM_BANDS  = 16;
+    
+    static constexpr std::array< double, NUM_BANDS > frequencies =
+    { 100 , 150, 250, 350, 500, 630, 800, 1000, 1300, 1600, 2000, 2600, 3500, 5000, 8000, 10000 };
+    //    { 1000 };
+    
     bool m_parametersChangedFlag = false, m_editorOpenFlag = false;
     
     std::array< std::array < sjf_biquadCascade< float >, NUM_BANDS >, 2 > m_filters;

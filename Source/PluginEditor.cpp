@@ -10,12 +10,12 @@
 #include "PluginEditor.h"
 
 //#define NUM_BANDS 16
-#define SLIDER_WIDTH 400
+#define SLIDER_WIDTH 496
 #define SLIDER_HEIGHT 120
 #define SLIDER_HEIGHT2 SLIDER_HEIGHT/2
 #define indent 10
 #define textHeight 20
-#define boxWidth 80
+#define boxWidth 120
 
 #define WIDTH SLIDER_WIDTH + boxWidth*2 + indent*3
 #define HEIGHT SLIDER_HEIGHT + 6*SLIDER_HEIGHT2 + indent*3 + textHeight*4
@@ -295,6 +295,7 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
     xyPadYSlider.sendLookAndFeelChange();
     
     addAndMakeVisible( &XYpad );
+    XYpad.shouldDrawCornerCircles( true );
     XYpad.setTooltip( "This allows you to interpolate between the four preset settings" );
     XYpad.onMouseEvent = [this]
     {
@@ -302,8 +303,10 @@ Sjf_spectralProcessorAudioProcessorEditor::Sjf_spectralProcessorAudioProcessorEd
         if( xyPadXSlider.getValue() != pos[0] ){ xyPadXSlider.setValue( pos[0] ); }
         if( xyPadXSlider.getValue() != pos[1] ){ xyPadYSlider.setValue( pos[1] ); }
         
-        audioProcessor.interpolatePresets( XYpad.distanceFromCorners() );
         
+        audioProcessor.interpolatePresets( XYpad.distanceFromCorners() );
+        std::array< float, 4 > corners = XYpad.distanceFromCorners();
+        DBG( corners[0] << " " << corners[1] << " " << corners[2] << " " << corners[3] );
         m_canSavePreset = false;
         DBG("XYPAD CHANGED!!!!");
     };
@@ -403,8 +406,15 @@ void Sjf_spectralProcessorAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawFittedText("gain", bandGainsMultiSlider.getX(), bandGainsMultiSlider.getY(), bandGainsMultiSlider.getWidth(), bandGainsMultiSlider.getHeight(), juce::Justification::centred, textHeight );
     const int NUM_BANDS = audioProcessor.getNumBands();
     const float togW = SLIDER_WIDTH / NUM_BANDS;
+    
+    
+    std::vector< juce::String > frequencies =
+    { "<100" , "150", "250", "350", "500", "630", "800", "1k", "1.3k", "1.6k", "2k", "2.6k", "3.5k", "5k", "8k", ">10k" };
+    
     for ( int b = 0; b < NUM_BANDS; b ++ )
     {
+        g.drawFittedText( frequencies[ b ], 2 + bandGainsMultiSlider.getX() + togW * b, bandGainsMultiSlider.getY(), togW - 4, togW, juce::Justification::centred, textHeight );
+        
         g.drawFittedText(juce::CharPointer_UTF8 ("\xc3\x98"), polarityFlips.getX() + togW * b, polarityFlips.getY(), togW, polarityFlips.getHeight(), juce::Justification::centred, textHeight );
     }
     g.drawFittedText("lfo depth", lfoDepthMultiSlider.getX(), lfoDepthMultiSlider.getY(), lfoDepthMultiSlider.getWidth(), lfoDepthMultiSlider.getHeight(), juce::Justification::centred, textHeight );
@@ -434,12 +444,12 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     feedbackMultiSlider.setBounds( delayTimeMultiSlider.getX(), delayTimeMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     delayMixMultiSlider.setBounds( feedbackMultiSlider.getX(), feedbackMultiSlider.getBottom(), SLIDER_WIDTH, SLIDER_HEIGHT2 );
     
-    lfoTypeBox.setBounds( lfoDepthMultiSlider.getRight()+indent, lfoDepthMultiSlider.getY(), boxWidth, textHeight );
+    lfoTypeBox.setBounds( bandGainsMultiSlider.getRight()+indent, bandGainsMultiSlider.getY(), boxWidth, textHeight );
     bandsChoiceBox.setBounds( lfoTypeBox.getX(), lfoTypeBox.getBottom(), boxWidth, textHeight );
     filterDesignBox.setBounds( bandsChoiceBox.getX(), bandsChoiceBox.getBottom(), boxWidth, textHeight );
     filterOrderNumBox.setBounds( filterDesignBox.getX(), filterDesignBox.getBottom(), boxWidth, textHeight );
     
-    randomAllButton.setBounds( lfoTypeBox.getRight(), lfoTypeBox.getY(), boxWidth, boxWidth );
+    randomAllButton.setBounds( lfoTypeBox.getRight(), lfoTypeBox.getY(), boxWidth, textHeight*4 );
     
     presets.setBounds( lfoTypeBox.getX(), filterOrderNumBox.getBottom() + indent, boxWidth*2, textHeight );
 //    auto xySliderSize = textHeight/2;
@@ -449,7 +459,7 @@ void Sjf_spectralProcessorAudioProcessorEditor::resized()
     
     tooltipsToggle.setBounds( randomAllButton.getX(), HEIGHT - textHeight - indent, boxWidth, textHeight );
     
-    tooltipLabel.setBounds( 0, HEIGHT, getWidth(), textHeight*4 );
+    tooltipLabel.setBounds( 0, HEIGHT, getWidth(), textHeight*5 );
 }
 
 

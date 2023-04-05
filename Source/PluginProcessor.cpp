@@ -211,6 +211,8 @@ void Sjf_spectralProcessorAudioProcessor::processBlock (juce::AudioBuffer<float>
         {
             corners[i] = std::fmax( 0, 1.0f - corners[i] );
         }
+        
+        DBG("CORNERS PROCESS BLOACK " << corners[ 0 ] << " " << corners[ 1 ] << " " << corners[ 2 ] << " " << corners[ 3 ]);
         interpolatePresets( corners );
     }
     
@@ -485,10 +487,6 @@ void Sjf_spectralProcessorAudioProcessor::setFilterOrder( const int filterOrder 
 void Sjf_spectralProcessorAudioProcessor::initialiseFilters( double sampleRate)
 {
     //    m_biquadCalculator.initialise( sampleRate );
-    
-    static constexpr std::array< double, NUM_BANDS > frequencies
-    { 100 , 150, 250, 350, 500, 630, 800, 1000, 1300, 1600, 2000, 2600, 3500, 5000, 8000, 10000 };
-//    { 1000 };
     
     setFilterDesign( *filterDesignParameter );
     setFilterOrder( *filterOrderParameter );
