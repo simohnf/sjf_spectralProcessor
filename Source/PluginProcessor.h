@@ -9,12 +9,12 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "../../sjf_audio/sjf_audioUtilities.h"
-#include "../../sjf_audio/sjf_biquadCascade.h"
-#include "../../sjf_audio/sjf_lfo.h"
-#include "../../sjf_audio/sjf_delayLine.h"
-#include "../../sjf_audio/sjf_lpf.h"
-#include "../../sjf_audio/sjf_audioUtilities.h"
+#include "../sjf_audio/sjf_audioUtilities.h"
+#include "../sjf_audio/sjf_biquadCascade.h"
+#include "../sjf_audio/sjf_lfo.h"
+#include "../sjf_audio/sjf_delayLine.h"
+#include "../sjf_audio/sjf_lpf.h"
+#include "../sjf_audio/sjf_audioUtilities.h"
 
 //#define NUM_BANDS 16
 #define ORDER 4
