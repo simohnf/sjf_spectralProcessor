@@ -4,6 +4,17 @@
 
 This plug-in is a 16 band graphic EQ with LFO modulation for gain and feedback delay lines.
 
-NOTE: This requires functions and classes contained in [sjf_audio](https://github.com/simohnf/sjf_audio)
-
 [More info, audio samples, and installer](https://simohnf.github.io./plug-ins/sjf_spectralProcessor/)
+
+------------------------------
+# To download source:
+
+In terminal 
+```
+git clone https://github.com/simohnf/sjf_spectralProcessor
+
+cd sjf_spectralProcessor
+
+git submodule update --init --recursive
+```
+---------------
